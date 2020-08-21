@@ -269,7 +269,7 @@ Compute Ekman layer solution to problem given forcing dx(b).
 """
 function getChiEkman(bx)
     # Ekman layer thickness
-    delta = sqrt(2*Pr*κ1/abs(f)) # assuming constant κ 
+    δ = sqrt(2*Pr*κ1/abs(f)) # using κ at the bottom
 
     # interior solution: thermal wind balance
     chi_I = bx
@@ -277,13 +277,13 @@ function getChiEkman(bx)
     chi_I_top = repeat(chi_I[:, nσ], 1, nσ)
 
     # bottom Ekman layer correction
-    chi_B_bot = @. -exp(-(z + H(x))/delta)*chi_I_bot*(cos((z + H(x))/delta) + sin((z + H(x))/delta))
+    chi_B_bot = @. -exp(-(z + H(x))/δ)*chi_I_bot*(cos((z + H(x))/δ) + sin((z + H(x))/δ))
 
     # top Ekman layer correction
-    chi_B_top = @. -exp(z/delta)*chi_I_top*cos(z/delta)
+    chi_B_top = @. -exp(z/δ)*chi_I_top*cos(z/δ)
 
-    # full solution
-    chiEkman = @. κ1/f^2*(chi_I + chi_B_bot + chi_B_top)
+    # full solution (use full κ with assumption that its variation is larger than δ)
+    chiEkman = @. κ/f^2*(chi_I + chi_B_bot + chi_B_top)
 
     return chiEkman
 end

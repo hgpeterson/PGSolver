@@ -9,12 +9,12 @@ include("plottingLib.jl")
 include("inversion.jl")
 
 """
-    fx = xDerivativeTF(field)
+    fx = ξDerivativeTF(field)
 
 Compute dx(`field`) in terrian-following coordinates.
 Note: dx() = dξ() - dx(H)*σ*dσ()/H
 """
-function xDerivativeTF(field)
+function ξDerivativeTF(field)
     # allocate
     fx = zeros(nξ, nσ)
 
@@ -35,12 +35,12 @@ function xDerivativeTF(field)
 end
 
 """
-    fz = zDerivativeTF(field)
+    fz = σDerivativeTF(field)
 
 Compute dz(`field`) in terrian-following coordinates.
 Note: dz() = dσ()/H
 """
-function zDerivativeTF(field)
+function σDerivativeTF(field)
     # allocate
     fz = zeros(nξ, nσ)
 
@@ -64,8 +64,8 @@ function getEvolutionMatrices()
     diffMat = Tuple{Int64,Int64,Float64}[]         # diffusion operator matrix 
     diffVec = zeros(nPts)                          # diffusion operator vector 
     bdyFluxMat = Tuple{Int64,Int64,Float64}[]      # flux at boundary matrix
-    xDerivativeMat = Tuple{Int64,Int64,Float64}[]  # advection operator matrix (x)
-    zDerivativeMat = Tuple{Int64,Int64,Float64}[]  # advection operator matrix (z)
+    ξDerivativeMat = Tuple{Int64,Int64,Float64}[]  # advection operator matrix (ξ)
+    σDerivativeMat = Tuple{Int64,Int64,Float64}[]  # advection operator matrix (σ)
 
     # Main loop, insert stencil in matrices for each node point
     for i=1:nξ
@@ -90,17 +90,14 @@ function getEvolutionMatrices()
             push!(diffMat, (row, umap[i, j+1], (κ_σ*fd_σ[3] + κ[i, j]*fd_σσ[3])/H(ξ[i])^2))
             diffVec[row] = N^2*κ_σ/H(ξ[i])
 
-            # x advection term: dξ(b) - Hx*σ*dσ(b)/H
-            push!(xDerivativeMat, (row, umap[i, j-1], -Hx(ξ[i])*σ[j]*fd_σ[1]/H(ξ[i])))
-            push!(xDerivativeMat, (row, umap[i, j],   -Hx(ξ[i])*σ[j]*fd_σ[2]/H(ξ[i])))
-            push!(xDerivativeMat, (row, umap[i, j+1], -Hx(ξ[i])*σ[j]*fd_σ[3]/H(ξ[i])))
-            push!(xDerivativeMat, (row, umap[iR, j],  1.0/(2*dξ)))
-            push!(xDerivativeMat, (row, umap[iL, j], -1.0/(2*dξ)))
+            # ξ advection term: dξ()
+            push!(ξDerivativeMat, (row, umap[iR, j],  1.0/(2*dξ)))
+            push!(ξDerivativeMat, (row, umap[iL, j], -1.0/(2*dξ)))
 
-            # z advection term: dσ(b)/H
-            push!(zDerivativeMat, (row, umap[i, j-1], fd_σ[1]/H(ξ[i])))
-            push!(zDerivativeMat, (row, umap[i, j],   fd_σ[2]/H(ξ[i])))
-            push!(zDerivativeMat, (row, umap[i, j+1], fd_σ[3]/H(ξ[i])))
+            # σ advection term: dσ()
+            push!(σDerivativeMat, (row, umap[i, j-1], fd_σ[1]))
+            push!(σDerivativeMat, (row, umap[i, j],   fd_σ[2]))
+            push!(σDerivativeMat, (row, umap[i, j+1], fd_σ[3]))
         end
 
         # flux at boundaries: bottom
@@ -125,22 +122,26 @@ function getEvolutionMatrices()
     # Create CSC sparse matrix from matrix elements
     diffMat = sparse((x->x[1]).(diffMat), (x->x[2]).(diffMat), (x->x[3]).(diffMat), nPts, nPts)
     bdyFluxMat = sparse((x->x[1]).(bdyFluxMat), (x->x[2]).(bdyFluxMat), (x->x[3]).(bdyFluxMat), nPts, nPts)
-    xDerivativeMat = sparse((x->x[1]).(xDerivativeMat), (x->x[2]).(xDerivativeMat), (x->x[3]).(xDerivativeMat), nPts, nPts)
-    zDerivativeMat = sparse((x->x[1]).(zDerivativeMat), (x->x[2]).(zDerivativeMat), (x->x[3]).(zDerivativeMat), nPts, nPts)
+    ξDerivativeMat = sparse((x->x[1]).(ξDerivativeMat), (x->x[2]).(ξDerivativeMat), (x->x[3]).(ξDerivativeMat), nPts, nPts)
+    σDerivativeMat = sparse((x->x[1]).(σDerivativeMat), (x->x[2]).(σDerivativeMat), (x->x[3]).(σDerivativeMat), nPts, nPts)
 
-    return diffMat, diffVec, bdyFluxMat, xDerivativeMat, zDerivativeMat
+    return diffMat, diffVec, bdyFluxMat, ξDerivativeMat, σDerivativeMat
 end
 
-function eulerRHS(Δt, y, f)
-    return Δt*f(y)
-end
-function midpointRHS(Δt, y, f)
-	f1 = f(y)
-    f2 = f(y + Δt*f1/2)
-	dy = Δt*f2
-    return dy
-end
-function rk4RHS(Δt, y, f)
+"""
+    dy = explicitRHS(Δt, y, f)
+
+    Compute `dy`, the change in `y` given a timestep of `Δt` and that `dt(y) = f(y)`.
+"""
+function explicitRHS(Δt, y, f)
+    #= # euler =#
+    #= return Δt*f(y) =#
+    #= # midpoint =#
+	#= f1 = f(y) =#
+    #= f2 = f(y + Δt*f1/2) =#
+	#= dy = Δt*f2 =#
+    #= return dy =#
+    # RK4
 	f1 = f(y)
     f2 = f(y + Δt*f1/2)
     f3 = f(y + Δt*f2/2)
@@ -182,84 +183,6 @@ function plotCurrentState(t, chi, chiEkman, u, v, w, b, iImg)
     close()
 end
 
-#= """ =#
-#=     b = evolveDiffusionOnly(nSteps) =#
-
-#= Solve diffusion equation for `b` for `nSteps` time steps. =#
-#= """ =#
-#= function evolveDiffusionOnly(nSteps) =#
-#=     nPts = nξ*nσ =#
-
-#=     # initial condition =#
-#=     b = zeros(nξ, nσ) =#
-#=     u = zeros(nξ, nσ) =#
-#=     v = zeros(nξ, nσ) =#
-#=     w = zeros(nξ, nσ) =#
-    
-#=     # plot initial state of all zeros and no flow =#
-#=     iImg = 0 =#
-#=     plotCurrentState(0, u, v, w, b, iImg) =#
-
-#=     # flatten for matrix mult =#
-#=     bVec = reshape(b, nPts, 1) =#
-#=     umap = reshape(1:nPts, nξ, nσ) =#    
-#=     bottomBdy = umap[:, 1] =#
-#=     topBdy = umap[:, nσ] =#
-
-#=     # timestep =#
-#=     Δt = 10*86400 =#
-
-#=     # get matrices and vectors =#
-#=     diffMat, diffVec, bdyFluxMat, xDerivativeMat, zDerivativeMat = getEvolutionMatrices() =#
-
-#=     # implicit euler =#
-#=     LHS = I/Δt - diffMat =# 
-
-#=     # no flux boundaries =#
-#=     LHS[bottomBdy, :] = bdyFluxMat[bottomBdy, :] =#
-#=     LHS[topBdy, :] = bdyFluxMat[topBdy, :] =#
-
-#=     # save LU decomposition for speed =#
-#=     LHS = lu(LHS) =#
-
-#=     # left-hand side for inversion equations =#
-#=     inversionLHS = lu(getInversionLHS()) =#
-
-#=     # main loop =#
-#=     for i=1:nSteps =#
-#=         # implicit euler diffusion =#
-#=         RHS = bVec/Δt + diffVec =#
-
-#=         # no flux boundaries =#
-#=         RHS[bottomBdy] .= -N^2 =#
-#=         RHS[topBdy] .= -N^2 =#
-
-#=         # solve =#
-#=         bVec = LHS\RHS =#
-
-#=         # log =#
-#=         println("t = ", i*Δt/86400, " days") =#
-#=         if i % 10 == 0 =#
-#=             iImg += 1 =#
-
-#=             # reshape =#
-#=             b = reshape(bVec, nξ, nσ) =#
-
-#=             # invert buoyancy for flow =#
-#=             inversionRHS = getInversionRHS(b) =#
-#=             sol = inversionLHS\inversionRHS =#
-#=             chi, u, v, w, U = postProcess(sol) =#
-
-#=             # plot flow =#
-#=             plotCurrentState(i*Δt, u, v, w, b, iImg) =#
-#=         end =#
-#=     end =#
-
-#=     b = reshape(bVec, nξ, nσ) =#
-
-#=     return b =#
-#= end =#
-
 """
 """
 function getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy)
@@ -288,6 +211,8 @@ function evolveFullNL(nSteps)
     u = zeros(nξ, nσ)
     v = zeros(nξ, nσ)
     w = zeros(nξ, nσ)
+    uξ = zeros(nξ, nσ)
+    uσ = zeros(nξ, nσ)
     
     # plot initial state of all zeros and no flow
     iImg = 0
@@ -299,8 +224,10 @@ function evolveFullNL(nSteps)
 
     # flatten for matrix mult
     bVec = reshape(b, nPts, 1)
-    uVec = reshape(u, nPts, 1)
-    wVec = reshape(w, nPts, 1)
+    #= uVec = reshape(u, nPts, 1) =#
+    #= wVec = reshape(w, nPts, 1) =#
+    uξVec = reshape(uξ, nPts, 1)
+    uσVec = reshape(uσ, nPts, 1)
     umap = reshape(1:nPts, nξ, nσ)    
     bottomBdy = umap[:, 1]
     topBdy = umap[:, nσ]
@@ -308,17 +235,22 @@ function evolveFullNL(nSteps)
     # timestep
     #= Δt = 10*86400 =#
     Δt = 10*86400
-    #= nSteps100Days = Int64(round(100*86400/Δt)) =#
-    #= nSteps1000Days = Int64(round(1000*86400/Δt)) =#
+    nStepsInvert = 10
+    nStepsPlot = 10
+    nStepsProfile = 100
+    adaptiveTimestep = false
 
     # get matrices and vectors
-    diffMat, diffVec, bdyFluxMat, xDerivativeMat, zDerivativeMat = getEvolutionMatrices()
+    diffMat, diffVec, bdyFluxMat, ξDerivativeMat, σDerivativeMat = getEvolutionMatrices()
 
     # left-hand side for evolution equation (save LU decomposition for speed)
     evolutionLHS = lu(getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy))
 
     # left-hand side for inversion equations
     inversionLHS = lu(getInversionLHS())
+
+    # vector of H values
+    HVec = H.(reshape(x, nPts, 1))
 
     # main loop
     t = 0
@@ -330,24 +262,16 @@ function evolveFullNL(nSteps)
         diffRHS = bVec + diffVec*Δt
 
 
-        # function to compute explicit advection 
-        # (note the parentheses here to allow for sparse matrices to work first)
-        fAdvRHS(bVec) = -(uVec.*(xDerivativeMat*bVec) + wVec.*(zDerivativeMat*bVec) + wVec*N^2)
-        #= advRHS = -Δt*(uVec.*(xDerivativeMat*bVec) + wVec.*(zDerivativeMat*bVec) + wVec*N^2) =#
+        #= # function to compute advection RHS =#
+        #= # (note the parentheses here to allow for sparse matrices to work first) =#
+        #= fAdvRHS(bVec) = -(uξVec.*(ξDerivativeMat*bVec) + uσVec.*(σDerivativeMat*bVec) + uσVec.*HVec*N^2) =#
 
-        #= # euler =# 
-        #= advRHS = eulerRHS(Δt, bVec, fAdvRHS) =#
-        #= # midpoint =# 
-        #= advRHS = midpointRHS(Δt, bVec, fAdvRHS) =#
-        # RK4
-        advRHS = rk4RHS(Δt, bVec, fAdvRHS)
-
-    
-        #= # explicit advection (note the parentheses here to allow for sparse matrices to work first) =#
-        #= advRHS = -uVec.*(xDerivativeMat*bVec) .- wVec.*(zDerivativeMat*bVec) .- wVec*N^2 =#
+        #= # explicit timestep for advection =#
+        #= advRHS = explicitRHS(Δt, bVec, fAdvRHS) =#
 
         # sum the two
-        evolutionRHS = diffRHS + advRHS
+        #= evolutionRHS = diffRHS + advRHS =#
+        evolutionRHS = diffRHS 
 
         # no flux boundaries
         evolutionRHS[bottomBdy] .= -N^2
@@ -358,38 +282,44 @@ function evolveFullNL(nSteps)
 
         # log
         println(@sprintf("t = %.2f days (i = %d)", tDays, i))
-        if i % 2 == 0
+        if i % nStepsInvert == 0
             # reshape
             b = reshape(bVec, nξ, nσ)
 
             # invert buoyancy for flow
             chi, u, v, w, U = invert(b, inversionLHS)
-            uVec = reshape(u, nPts, 1)
-            wVec = reshape(w, nPts, 1)
+            uξ = u
+            uσ = (w - repeat(σ', nξ, 1).*Hx.(x).*u)./H.(x)
+            #= uVec = reshape(u, nPts, 1) =#
+            #= wVec = reshape(w, nPts, 1) =#
+            uξVec = reshape(uξ, nPts, 1)
+            uσVec = reshape(uσ, nPts, 1)
             uCFL = minimum(abs.(dx./u))
             wCFL = minimum(abs.(dz./w))
             #= println(@sprintf("CFL u: %.2f days", uCFL/86400)) =#
             #= println(@sprintf("CFL w: %.2f days", wCFL/86400)) =#
-            if 0.5*minimum([uCFL, wCFL]) < Δt
+            if 0.5*minimum([uCFL, wCFL]) < Δt && adaptiveTimestep
                 # need to have smaller step size by CFL
                 Δt = 0.5*minimum([uCFL, wCFL])
                 println(@sprintf("Decreasing timestep to %.2f days", Δt/86400))
                 evolutionLHS = lu(getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy))
-            elseif 0.5*minimum([uCFL, wCFL]) > 10*Δt
+            elseif 0.5*minimum([uCFL, wCFL]) > 10*Δt && adaptiveTimestep
                 # could have much larger step size by CFL
                 Δt = minimum([0.5*minimum([uCFL, wCFL]), 10*86400])
                 println(@sprintf("Increasing timestep to %.2f days", Δt/86400))
                 evolutionLHS = lu(getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy))
             end
         end
-        if i % 10 == 0
+        if i % nStepsPlot == 0
             # plot flow
             iImg += 1
             bx = xDerivativeTF(b)
             chiEkman = getChiEkman(bx)
+            errorEkman = norm(chi - chiEkman, 2)
+            println(@sprintf("chiEkman L2 error = %.2e", errorEkman))
             plotCurrentState(t, chi, chiEkman, u, v, w, b, iImg)
         end
-        if i % 100 == 0
+        if i % nStepsProfile == 0
             profilePlot(ax, u, v, w, b, iξ, tDays)
         end
     end

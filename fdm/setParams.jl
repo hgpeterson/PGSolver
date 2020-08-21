@@ -1,6 +1,6 @@
 # parameters (as in RC20)
-L = 1e6
-H0 = 1e3
+L = 4e6
+H0 = 4e3
 Pr = 1e0
 f = -5.5e-5
 N = 1e-3
@@ -37,7 +37,7 @@ dz[:, end] = dz[:, end-1]
 κ0 = 6e-5
 κ1 = 2e-3
 h = 200
-κ = κ1*ones(nξ, nσ)
-#= κ = @. κ0 + κ1*exp(-(z + H(x))/h) =#
+#= κ = κ1*ones(nξ, nσ) =#
+κ = @. κ0 + κ1*exp(-(z + H(x))/h)
 println("Ekman layer thickness ~ ", sqrt(2*Pr*κ1/abs(f)))
 println("z[2] - z[1] ~ ", H0*(σ[2] - σ[1]))
