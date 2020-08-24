@@ -14,7 +14,7 @@ include("inversion.jl")
 Compute dx(`field`) in terrian-following coordinates.
 Note: dx() = dξ() - dx(H)*σ*dσ()/H
 """
-function ξDerivativeTF(field)
+function xDerivativeTF(field)
     # allocate
     fx = zeros(nξ, nσ)
 
@@ -40,7 +40,7 @@ end
 Compute dz(`field`) in terrian-following coordinates.
 Note: dz() = dσ()/H
 """
-function σDerivativeTF(field)
+function zDerivativeTF(field)
     # allocate
     fz = zeros(nξ, nσ)
 

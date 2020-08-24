@@ -167,7 +167,8 @@ function evolveFullNL(nSteps)
     topBdy = umap[:, nσ]
 
     # timestep
-    Δt = 10
+    Δt = 1
+    #= Δt = 10 =#
     nStepsInvert = 10
     nStepsPlot = 10
     nStepsProfile = 100
@@ -213,7 +214,7 @@ function evolveFullNL(nSteps)
         bVec = evolutionLHS\evolutionRHS
 
         # log
-        println(@sprintf("t = %.2e s (i = %d)", t, i))
+        println(@sprintf("t = %d s (i = %d)", t, i))
         if i % nStepsInvert == 0
             # reshape
             b = reshape(bVec, nρ, nσ)

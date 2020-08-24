@@ -7,7 +7,6 @@ N = 1e-3
 
 # topography
 amp =  0.4*H0
-#= amp =  0.04*H0 =#
 
 #= H(x) = H0 # flat =#
 #= Hx(x) = 0 =#
@@ -22,8 +21,6 @@ nσ = 2^8
 # domain in terrain-following (ξ, σ) space
 dξ = dx = L/nξ
 ξ = 0:dξ:(L - dξ)
-#= dσ = 1/(nσ - 1) =#
-#= σ = -1:dσ:0 =#
 σ = @. -(cos(pi*(0:nσ-1)/(nσ-1)) + 1)/2 # chebyshev 
 
 # domain in physical (x, z) space (2D arrays)
@@ -37,7 +34,7 @@ dz[:, end] = dz[:, end-1]
 κ0 = 6e-5
 κ1 = 2e-3
 h = 200
-#= κ = κ1*ones(nξ, nσ) =#
-κ = @. κ0 + κ1*exp(-(z + H(x))/h)
+κ = κ1*ones(nξ, nσ)
+#= κ = @. κ0 + κ1*exp(-(z + H(x))/h) =#
 println("Ekman layer thickness ~ ", sqrt(2*Pr*κ1/abs(f)))
 println("z[2] - z[1] ~ ", H0*(σ[2] - σ[1]))

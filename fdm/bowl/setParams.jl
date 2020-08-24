@@ -2,8 +2,10 @@
 L = 0.4
 H0 = 0.12
 Pr = 1e0
-f = 0.66
-N = 3
+#= f = 0.66 =#
+f = 1
+#= N = 3 =#
+N = 2
 
 # bowl
 c = 2*L # chord length
@@ -31,7 +33,7 @@ dz[:, end] = dz[:, end-1]
 κ0 = 1e-8
 κ1 = 1e-6
 h = H0/10
-#= κ = κ1*ones(nρ, nσ) =#
-κ = @. κ0 + κ1*exp(-(z + H(r))/h)
+κ = κ1*ones(nρ, nσ)
+#= κ = @. κ0 + κ1*exp(-(z + H(r))/h) =#
 println("Ekman layer thickness ~ ", sqrt(2*Pr*κ1/abs(f)))
 println("z[2] - z[1] ~ ", H0*(σ[2] - σ[1]))

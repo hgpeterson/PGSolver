@@ -75,10 +75,10 @@ function profilePlotInit()
     return ax
 end
 
-function profilePlot(ax, u, v, w, b, iρ, day)
+function profilePlot(ax, u, v, w, b, iρ, t)
     bz = zDerivativeTF(b)
 
-    ax[1, 1].plot(u[iρ, :], z[iρ, :], label=string("Day ", Int64(round(day))))
+    ax[1, 1].plot(u[iρ, :], z[iρ, :], label=string(Int64(round(t)), " s"))
     ax[1, 2].plot(v[iρ, :], z[iρ, :])
     ax[2, 1].plot(w[iρ, :], z[iρ, :])
     ax[2, 2].plot(N^2 .+ bz[iρ, :], z[iρ, :])
@@ -90,28 +90,28 @@ end
 Plot the buoyancy and velocity state of the model at time `t` using label number `iImg`.
 """
 function plotCurrentState(t, chi, chiEkman, u, v, w, b, iImg)
-    ridgePlot(chi, b, @sprintf("streamfunction at t = %.1e s", t), L"$\chi$ (m$^2$ s$^{-1}$)")
+    ridgePlot(chi, b, @sprintf("streamfunction at t = %.1f s", t), L"$\chi$ (m$^2$ s$^{-1}$)")
     savefig(@sprintf("chi%03d.png", iImg))
     close()
 
-    ridgePlot(chiEkman, b, @sprintf("streamfunction theory at t = %.1e s", t), L"$\chi$ (m$^2$ s$^{-1}$)")
+    ridgePlot(chiEkman, b, @sprintf("streamfunction theory at t = %.1f s", t), L"$\chi$ (m$^2$ s$^{-1}$)")
     savefig(@sprintf("chiEkman%03d.png", iImg))
     close()
 
-    ridgePlot(b, b, @sprintf("buoyancy perturbation at t = %.1e s", t), L"$b$ (m s$^{-2}$)")
+    ridgePlot(b, b, @sprintf("buoyancy perturbation at t = %.1f s", t), L"$b$ (m s$^{-2}$)")
     savefig(@sprintf("b%03d.png", iImg))
     close()
 
     #= ridgePlot(u, b, @sprintf("cross-ridge velocity at t = %.1f days", t/86400), L"$u$ (m s$^{-1}$)"; vext=5e-5) =#
-    ridgePlot(u, b, @sprintf("cross-ridge velocity at t = %.1e s", t), L"$u$ (m s$^{-1}$)")
+    ridgePlot(u, b, @sprintf("cross-ridge velocity at t = %.1f s", t), L"$u$ (m s$^{-1}$)")
     savefig(@sprintf("u%03d.png", iImg))
     close()
 
-    ridgePlot(v, b, @sprintf("along-ridge velocity at t = %.1e s", t), L"$v$ (m s$^{-1}$)")
+    ridgePlot(v, b, @sprintf("along-ridge velocity at t = %.1f s", t), L"$v$ (m s$^{-1}$)")
     savefig(@sprintf("v%03d.png", iImg))
     close()
 
-    ridgePlot(w, b, @sprintf("vertical velocity at t = %.1e s", t), L"$w$ (m s$^{-1}$)")
+    ridgePlot(w, b, @sprintf("vertical velocity at t = %.1f s", t), L"$w$ (m s$^{-1}$)")
     savefig(@sprintf("w%03d.png", iImg))
     close()
 end
