@@ -10,6 +10,7 @@ plt.style.use("~/presentation_plots.mplstyle")
 
 include("setParams.jl")
 include("myJuliaLib.jl")
+include("terrainFollowing.jl")
 
 # buoyancy perturbation
 #= b = zeros(nξ, nσ) =#
@@ -217,35 +218,35 @@ function solveSystem(b)
 end
 
 """
-    chi, u, v, w, U = postProcess(sol)
+    chi, uξ, uη, uσ, U = postProcess(sol)
 
-Take solution `sol` and extract reshaped `chi` and `U`. Compute `u`, `v`, `w` 
+Take solution `sol` and extract reshaped `chi` and `U`. Compute `uξ`, `uη`, `uσ` 
 from definition of chi.
 """
 function postProcess(sol)
-    # chi at σ = 0 is vertical integral of zonal flow
-    U = sol[end]
+    # chi at σ = 0 is vertical integral of uξ
+    U = sol[end] #FIXME think about this for TF coords
 
     # reshape rest of solution to get chi
     chi = reshape(sol[1:end-1], nξ, nσ)
 
-    # compute u = dz(chi) = dσ(chi)/H
-    u = zDerivativeTF(chi)
+    # compute uξ = dσ(chi)/H
+    uξ = σDerivativeTF(chi)./H.(x)
 
-    # compute v = int_-H^0 f*chi/nu dz = int_-1^0 f*chi/nu dσ*H
-    v = zeros(nξ, nσ)
+    # compute uη = int_-1^0 f*chi/nu dσ*H
+    uη = zeros(nξ, nσ)
     for i=1:nξ
-        v[i, :] = cumtrapz(f*chi[i, :]./(Pr*κ[i, :]) .- U, σ)*H(ξ[i])
+        uη[i, :] = cumtrapz(f*chi[i, :]./(Pr*κ[i, :]) .- U, σ)*H(ξ[i])
     end
 
-    # compute w = -dx(chi) = -dξ(chi) + dx(H)*σ*dσ(chi)/H
-    w = -xDerivativeTF(chi)
+    # compute uσ = -dξ(chi)/H
+    uσ = -ξDerivativeTF(chi)./H.(x)
 
-    return chi, u, v, w, U
+    return chi, uξ, uη, uσ, U
 end
 
 """
-    chi, u, v, w, U = invert(b, inversionLHS)
+    chi, uξ, uη, uσ, U = invert(b, inversionLHS)
 
 Wrapper function that inverts for flow given buoyancy perturbation `b`.
 """
@@ -257,17 +258,20 @@ function invert(b, inversionLHS)
     sol = inversionLHS\inversionRHS
 
     # compute flow from sol
-    chi, u, v, w, U = postProcess(sol)
+    chi, uξ, uη, uσ, U = postProcess(sol)
 
-    return chi, u, v, w, U
+    return chi, uξ, uη, uσ, U
 end
 
 """
-    chiEkman = getChiEkman(bx)
+    chiEkman = getChiEkman(b)
 
-Compute Ekman layer solution to problem given forcing dx(b).
+Compute Ekman layer solution to problem given buoyancy perturbation b.
 """
-function getChiEkman(bx)
+function getChiEkman(b)
+    # compute x derivative of b
+    bx = xDerivativeTF(b)
+
     # Ekman layer thickness
     δ = sqrt(2*Pr*κ1/abs(f)) # using κ at the bottom
 
@@ -287,170 +291,3 @@ function getChiEkman(bx)
 
     return chiEkman
 end
-
-"""
-    makePlots(chi, u, v, w)
-
-Plot the results.
-"""
-function makePlots(chi, u, v, w)
-    # for isopycnals
-    ρ = N^2*z + b 
-
-    # analytical Ekman solution for chi
-    chiEkman = getChiEkman(bx)
-
-    # plot
-    figure()
-    vmax = maximum(abs.(b))
-    vmin = -vmax
-    pcolormesh(x, z, b, cmap="RdBu_r", vmin=vmin, vmax=vmax)
-    colorbar(label=L"$b$ (m s$^{-2}$)")
-    contour(x, z, ρ, 20, colors="k", alpha=0.3, linestyles="-")
-    fill_between(x[:, 1], z[:, 1], minimum(z), color="k", alpha=0.3)
-    title(L"$b$")
-    xlabel(L"$x$ (m)")
-    ylabel(L"$z$ (m)")
-    savefig("b.png")
-
-    figure()
-    vmax = maximum(abs.(bx))
-    vmin = -vmax
-    pcolormesh(x, z, bx, cmap="RdBu_r", vmin=vmin, vmax=vmax)
-    colorbar(label=L"$b_x$ (s$^{-2}$)")
-    contour(x, z, ρ, 20, colors="k", alpha=0.3, linestyles="-")
-    fill_between(x[:, 1], z[:, 1], minimum(z), color="k", alpha=0.3)
-    title(L"$b_x$")
-    xlabel(L"$x$ (m)")
-    ylabel(L"$z$ (m)")
-    savefig("bx.png")
-
-    figure()
-    vmax = maximum(abs.(chi))
-    vmin = -vmax
-    pcolormesh(x, z, chi, cmap="RdBu_r", vmin=vmin, vmax=vmax)
-    colorbar(label=L"$\chi$ (m$^2$ s$^{-1}$)")
-    contour(x, z, ρ, 20, colors="k", alpha=0.3, linestyles="-")
-    fill_between(x[:, 1], z[:, 1], minimum(z), color="k", alpha=0.3)
-    title(L"$\chi$")
-    xlabel(L"$x$ (m)")
-    ylabel(L"$z$ (m)")
-    savefig("chi.png")
-
-    figure()
-    vmax = maximum(abs.(u))
-    vmin = -vmax
-    pcolormesh(x, z, u, cmap="RdBu_r", vmin=vmin, vmax=vmax)
-    colorbar(label=L"$u$ (m s$^{-1}$)")
-    contour(x, z, ρ, 20, colors="k", alpha=0.3, linestyles="-")
-    fill_between(x[:, 1], z[:, 1], minimum(z), color="k", alpha=0.3)
-    title(L"$u$")
-    xlabel(L"$x$ (m)")
-    ylabel(L"$z$ (m)")
-    savefig("u.png")
-
-    figure()
-    vmax = maximum(abs.(v))
-    vmin = -vmax
-    pcolormesh(x, z, v, cmap="RdBu_r", vmin=vmin, vmax=vmax)
-    colorbar(label=L"$v$ (m s$^{-1}$)")
-    contour(x, z, ρ, 20, colors="k", alpha=0.3, linestyles="-")
-    fill_between(x[:, 1], z[:, 1], minimum(z), color="k", alpha=0.3)
-    title(L"$v$")
-    xlabel(L"$x$ (m)")
-    ylabel(L"$z$ (m)")
-    savefig("v.png")
-
-    figure()
-    vmax = maximum(abs.(w))
-    vmin = -vmax
-    pcolormesh(x, z, w, cmap="RdBu_r", vmin=vmin, vmax=vmax)
-    colorbar(label=L"$w$ (m s$^{-1}$)")
-    contour(x, z, ρ, 20, colors="k", alpha=0.3, linestyles="-")
-    fill_between(x[:, 1], z[:, 1], minimum(z), color="k", alpha=0.3)
-    title(L"$w$")
-    xlabel(L"$x$ (m)")
-    ylabel(L"$z$ (m)")
-    savefig("w.png")
-
-    figure()
-    vmax = maximum(abs.(chi)) # compare to chi
-    vmin = -vmax
-    pcolormesh(x, z, chiEkman, cmap="RdBu_r", vmin=vmin, vmax=vmax)
-    colorbar(label=L"$\chi$ (m$^2$ s$^{-1}$)")
-    contour(x, z, ρ, 20, colors="k", alpha=0.3, linestyles="-")
-    fill_between(x[:, 1], z[:, 1], minimum(z), color="k", alpha=0.3)
-    title(L"$\chi$ approximation")
-    xlabel(L"$x$ (m)")
-    ylabel(L"$z$ (m)")
-    savefig("chiEkman.png")
-end
-
-#= """ =#
-#=     uξ, wσ = check_continuity(sol, u, w) =#
-
-#= See how true continuity equation uξ + wσ = 0 is and plot results. =#
-#= """ =#
-#= function check_continuity(sol, u, w) =#
-#=     # gather solution =#
-#=     chi = sol[:, :] =#
-#=     ρ = N^2*repeat((σ.*H(ξ))', nξ, 1) + b =# 
-
-#=     # compute dξ(u) =#
-#=     uξ = zeros(nξ, nσ) =#
-#=     for i=2:nξ-1 =#
-#=         uξ[i, :] = (u[i+1, :] - u[i-1, :])/(2*dξ) =#
-#=     end =#
-#=     uξ[1, :] = (u[2, :] - u[nξ, :])/(2*dξ) =#
-#=     uξ[nξ, :] = (u[1, :] - u[nξ-1, :])/(2*dξ) =#
-
-#=     # compute dσ(w) =#
-#=     wσ = zeros(nξ, nσ) =#
-#=     for j=2:nσ-1 =#
-#=         fd_σ = mkfdstencil(σ[j-1:j+1], σ[j], 1) =#
-#=         wσ[:, j] = fd_σ[1]*w[:, j-1] + fd_σ[2]*w[:, j] + fd_σ[3]*w[:, j+1] =#
-#=     end =#
-#=     fd_σ = mkfdstencil(σ[1:3], σ[1], 1) =#
-#=     wσ[:, 1] = fd_σ[1]*w[:, 1] + fd_σ[2]*w[:, 2] + fd_σ[3]*w[:, 3] =#
-#=     fd_σ = mkfdstencil(σ[nσ-2:nσ], σ[nσ], 1) =#
-#=     wσ[:, nσ] = fd_σ[1]*w[:, nσ-2] + fd_σ[2]*w[:, nσ-1] + fd_σ[3]*w[:, nσ] =#
-
-#=     # plot and print maximum of dξ(u) + dσ(w) =#
-#=     figure() =#
-#=     vmax = maximum(abs.(uξ)) =#
-#=     vmin = -vmax =#
-#=     pcolormesh(ξ, σ, uξ', cmap="RdBu_r", vmin=vmin, vmax=vmax) =#
-#=     colorbar(label=L"$u_ξ$ (m s$^{-1}$)") =#
-#=     contour(ξ, σ, ρ', 10, colors="k", alpha=0.5) =#
-#=     title(L"$u_ξ$") =#
-#=     xlabel(L"$ξ$ (m)") =#
-#=     ylabel(L"$σ$ (m)") =#
-
-#=     figure() =#
-#=     vmax = maximum(abs.(wσ)) =#
-#=     vmin = -vmax =#
-#=     pcolormesh(ξ, σ, wσ', cmap="RdBu_r", vmin=vmin, vmax=vmax) =#
-#=     colorbar(label=L"$w_σ$ (m s$^{-1}$)") =#
-#=     contour(ξ, σ, ρ', 10, colors="k", alpha=0.5) =#
-#=     title(L"$w_σ$") =#
-#=     xlabel(L"$ξ$ (m)") =#
-#=     ylabel(L"$σ$ (m)") =#
-
-#=     figure() =#
-#=     vmax = maximum(abs.(uξ .+ wσ)) =#
-#=     ijmax = argmax(abs.(uξ .+ wσ)) =#
-#=     println("Maξ uξ + wσ = ", vmax, " at ", ijmax) =#
-#=     vmin = -vmax =#
-#=     pcolormesh(ξ, σ, (uξ .+ wσ)', cmap="RdBu_r", vmin=vmin, vmax=vmax) =#
-#=     colorbar(label=L"$u_ξ + w_σ$ (m s$^{-1}$)") =#
-#=     contour(ξ, σ, ρ', 10, colors="k", alpha=0.5) =#
-#=     title(L"$u_ξ + w_σ$") =#
-#=     xlabel(L"$ξ$ (m)") =#
-#=     ylabel(L"$σ$ (m)") =#
-
-#=     return uξ, wσ =#
-#= end =#
-
-#= sol = solve(b) =#
-#= chi, u, v, w, U = postProcess(sol) =#
-#= makePlots(chi, u, v, w) =#
