@@ -4,6 +4,9 @@ H0 = 4e3
 Pr = 1e0
 f = -5.5e-5
 N = 1e-3
+# as in CF18
+β = 2e-11
+r = 0.1*β*L
 
 # topography
 amp =  0.4*H0
