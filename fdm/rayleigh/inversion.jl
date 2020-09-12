@@ -183,7 +183,7 @@ function pointwise1D(t, inversionLHS)
 end
 
 
-#= ### example: show 1D solution at t = 100 days =#
-#= inversionLHS = lu(getInversionLHS()) =#
-#= b, chi, uξ, uη, uσ, U = pointwise1D(100*86400, inversionLHS) =#
-#= plotCurrentState(100*86400, chi, uξ, uη, uσ, b, 999) =#
+### example: show 1D solution at t = 100 days
+inversionLHS = lu(getInversionLHS())
+b, chi, uξ, uη, uσ, U = pointwise1D(800*86400, inversionLHS)
+plotCurrentState(800*86400, chi, uξ, uη, uσ, b, 999)

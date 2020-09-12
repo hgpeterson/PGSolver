@@ -2,7 +2,7 @@
 # Functions useful for plotting
 ################################################################################
 
-using PyPlot
+using PyPlot, Printf
 
 """
     ax = ridgePlot(field, b, titleString, cbarLabel; vext)
@@ -29,19 +29,26 @@ function ridgePlot(field, b, titleString, cbarLabel; vext=nothing)
     end
 
     # 2D plot
-    img = ax.pcolormesh(x, z, field, cmap="RdBu_r", vmin=vmin, vmax=vmax)
-    colorbar(img, ax=ax, label=cbarLabel)
+    img = ax.pcolormesh(x/1000, z, field, cmap="RdBu_r", vmin=vmin, vmax=vmax, rasterized=true)
+    cb = colorbar(img, ax=ax, label=cbarLabel)
+    cb.ax.ticklabel_format(style="sci", scilimits=(-3, 3))
 
     # isopycnal contours
-    ax.contour(x, z, B, 20, colors="k", alpha=0.3, linestyles="-")
+    nLevels = 20
+    lowerLevel = N^2*minimum(z)
+    upperLevel = 0
+    levels = lowerLevel:(upperLevel - lowerLevel)/(nLevels - 1):upperLevel
+    ax.contour(x/1000, z, B, levels=levels, colors="k", alpha=0.3, linestyles="-")
 
     # ridge shading
-    ax.fill_between(x[:, 1], z[:, 1], minimum(z), color="k", alpha=0.3)
+    ax.fill_between(x[:, 1]/1000, z[:, 1], minimum(z), color="k", alpha=0.3)
 
     # labels
     ax.set_title(titleString)
-    ax.set_xlabel(L"$x$ (m)")
+    ax.set_xlabel(L"$x$ (km)")
     ax.set_ylabel(L"$z$ (m)")
+
+    tight_layout()
     
     return ax
 end

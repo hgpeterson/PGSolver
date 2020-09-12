@@ -158,12 +158,13 @@ function evolveFullNL(nSteps)
     HVec = reshape(H.(x), nPts, 1)
 
     # initial condition
-    #= t = 0 =#
-    #= b = zeros(nξ, nσ) =#
-    # load data
-    file = h5open("b.h5", "r")
-    b = read(file, "b")
-    t = read(file, "t")
+    t = 0
+    b = zeros(nξ, nσ)
+    #= # load data =#
+    #= file = h5open("b.h5", "r") =#
+    #= b = read(file, "b") =#
+    #= t = read(file, "t") =#
+    #= close(file) =#
 
     # invert initial condition
     chi, uξ, uη, uσ, U = invert(b, inversionLHS)
@@ -222,10 +223,10 @@ function evolveFullNL(nSteps)
             chi, uξ, uη, uσ, U = invert(b, inversionLHS)
             uξVec = reshape(uξ, nPts, 1)
             uσVec = reshape(uσ, nPts, 1)
-            uξCFL = minimum(abs.(dξ./uξ))
-            uσCFL = minimum(abs.(dσ./uσ))
-            println(@sprintf("CFL uξ: %.2f days", uξCFL/86400))
-            println(@sprintf("CFL uσ: %.2f days", uσCFL/86400))
+            #= uξCFL = minimum(abs.(dξ./uξ)) =#
+            #= uσCFL = minimum(abs.(dσ./uσ)) =#
+            #= println(@sprintf("CFL uξ: %.2f days", uξCFL/86400)) =#
+            #= println(@sprintf("CFL uσ: %.2f days", uσCFL/86400)) =#
             #= if 0.5*minimum([uξCFL, uσCFL]) < Δt && adaptiveTimestep =#
             #=     # need to have smaller step size by CFL =#
             #=     Δt = 0.5*minimum([uξCFL, uσCFL]) =#
@@ -252,6 +253,11 @@ function evolveFullNL(nSteps)
         end
         if i % nStepsProfile == 0
             profilePlot(ax, uξ, uη, uσ, b, iξ, tDays)
+            # save data
+            file = h5open(@sprintf("b%d.h5", tDays), "w")
+            write(file, "b", b)
+            write(file, "t", t)
+            close(file)
         end
     end
 

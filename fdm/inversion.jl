@@ -3,10 +3,7 @@
 # finite differences, terrain-following coordinates, and taking advantage of 
 # a 2D geometry.
 ################################################################################
-using SparseArrays, PyPlot, LinearAlgebra
-
-close("all")
-plt.style.use("~/presentation_plots.mplstyle")
+using SparseArrays, LinearAlgebra
 
 include("setParams.jl")
 include("myJuliaLib.jl")
