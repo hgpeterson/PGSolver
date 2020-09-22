@@ -1,4 +1,6 @@
-using PyPlot, HDF5
+using PyPlot, PyCall, HDF5
+
+pl = pyimport("matplotlib.pylab")
 
 include("setParams.jl")
 include("inversion.jl")
@@ -6,6 +8,7 @@ include("plottingLib.jl")
 
 close("all")
 plt.style.use("~/paper_plots.mplstyle")
+pygui(false)
 
 # left-hand side for inversion equations
 #= inversionLHS = lu(getInversionLHS()) =#
@@ -23,18 +26,56 @@ function compareChiEkman()
     chi, uξ, uη, uσ, U = invert(b, inversionLHS)
     chiEkman = getChiEkman(b)
 
-    # plot both
-    fig, ax = subplots(1, 3, figsize=(6.5, 6.5/1.62/1.8), gridspec_kw=Dict("width_ratios" =>[3, 3, 2]))
+    #= # plot both =#
+    #= fig, ax = subplots(1, 3, figsize=(6.5, 6.5/1.62/1.8), gridspec_kw=Dict("width_ratios" =>[3, 3, 2])) =#
+
+    #= vmax = maximum(abs.(chi)) =#
+    #= vmin = -vmax =#
+
+    #= img = ax[1].pcolormesh(x/1000, z, chi, cmap="RdBu_r", vmin=vmin, vmax=vmax, rasterized=true) =#
+    #= img = ax[2].pcolormesh(x/1000, z, chiEkman, cmap="RdBu_r", vmin=vmin, vmax=vmax, rasterized=true) =#
+    #= fig.colorbar(img, ax=ax[1:2], label=L"$\chi$ (m$^2$ s$^{-1}$)", location="bottom", shrink=0.5, pad=0.2) =#
+
+    #= # isopycnal contours =#
+    #= nLevels = 20 =#
+    #= lowerLevel = N^2*minimum(z) =#
+    #= upperLevel = 0 =#
+    #= levels = lowerLevel:(upperLevel - lowerLevel)/(nLevels - 1):upperLevel =#
+    #= ax[1].contour(x/1000, z, B, levels=levels, colors="k", alpha=0.3, linestyles="-") =#
+    #= ax[2].contour(x/1000, z, B, levels=levels, colors="k", alpha=0.3, linestyles="-") =#
+
+    #= # ridge shading =#
+    #= ax[1].fill_between(x[:, 1]/1000, z[:, 1], minimum(z), color="k", alpha=0.3) =#
+    #= ax[2].fill_between(x[:, 1]/1000, z[:, 1], minimum(z), color="k", alpha=0.3) =#
+
+    #= # labels =#
+    #= ax[1].set_title("numerical streamfunction") =#
+    #= ax[1].set_xlabel(L"$x$ (km)") =#
+    #= ax[1].set_ylabel(L"$z$ (m)") =#
+    #= ax[2].set_title("analytical streamfunction") =#
+    #= ax[2].set_xlabel(L"$x$ (km)") =#
+    #= ax[3].set_xlabel(L"$\chi$ (m$^2$ s$^{-1}$)") =#
+
+    #= # 1D plot =#
+    #= ax[3].plot(chi[1, :], z[1, :], label="numerical") =#
+    #= ax[3].plot(chiEkman[1, :], z[1, :], label="analytical", ls="--") =#
+    #= ax[3].legend() =#
+
+    #= #1= tight_layout() =1# =#
+
+    #= savefig("chi_vs_chiEkman.pdf", bbox_inches="tight") =#
+    #= #1= savefig("chi_vs_chiEkman.pdf") =1# =#
+    
+    # plot both separately
+    fig, ax = subplots(1, 2, figsize=(6.5, 6.5/1.62/1.5))
 
     vmax = maximum(abs.(chi))
     vmin = -vmax
 
     img = ax[1].pcolormesh(x/1000, z, chi, cmap="RdBu_r", vmin=vmin, vmax=vmax, rasterized=true)
     img = ax[2].pcolormesh(x/1000, z, chiEkman, cmap="RdBu_r", vmin=vmin, vmax=vmax, rasterized=true)
-    fig.colorbar(img, ax=ax[1:2], label=L"$\chi$ (m$^2$ s$^{-1}$)", location="bottom", shrink=0.5, pad=0.2)
-    #= fig.colorbar(img, ax=ax[2], label=L"$\chi$ (m$^2$ s$^{-1}$)") =#
-    #= cax = fig.add_axes([0.01, 0.01, 6/7, 0.1]) =#
-    #= fig.colorbar(img, cax=cax, label=L"$\chi$ (m$^2$ s$^{-1}$)") =#
+    cb = fig.colorbar(img, ax=ax[1:2], label=L"$\chi$ (m$^2$ s$^{-1}$)", location="bottom", shrink=0.5, pad=0.2)
+    cb.set_ticks([-0.0015, 0, 0.0015])
 
     # isopycnal contours
     nLevels = 20
@@ -54,17 +95,34 @@ function compareChiEkman()
     ax[1].set_ylabel(L"$z$ (m)")
     ax[2].set_title("analytical streamfunction")
     ax[2].set_xlabel(L"$x$ (km)")
-    ax[3].set_xlabel(L"$\chi$ (m$^2$ s$^{-1}$)")
+    savefig("chi_vs_chiEkman2D.pdf", bbox_inches="tight")
+    close()
 
     # 1D plot
-    ax[3].plot(chi[1, :], z[1, :], label="numerical")
-    ax[3].plot(chiEkman[1, :], z[1, :], label="analytical", ls="--")
-    ax[3].legend()
-
-    #= tight_layout() =#
-
-    savefig("chi_vs_chiEkman.pdf", bbox_inches="tight")
-    #= savefig("chi_vs_chiEkman.pdf") =#
+    bx = xDerivativeTF(b)
+    chi_I = @. κ/f^2*bx
+    fig, ax = subplots(1, 2, figsize=(2*3.25/1.62, 3.25))
+    ax[1].plot(chi[1, :], z[1, :], label="numerical")
+    ax[1].plot(chiEkman[1, :], z[1, :], label="analytical", ls="--")
+    ax[1].plot(chi_I[1, :], z[1, :], label="interior", ls=":")
+    ax[1].axvline(0, lw=0.5, c="k", ls="-")
+    ax[1].fill_between(-10:10, -900, -1000, color="k", alpha=0.1)
+    ax[1].legend()
+    ax[1].set_xlabel(L"$\chi$ (m$^2$ s$^{-1}$)")
+    ax[1].set_ylabel(L"$z$ (m)")
+    ax[1].set_xlim([-0.0004, 0.002])
+    ax[1].set_ylim([-1000, 0])
+    ax[2].plot(chi[1, :], z[1, :], label="numerical")
+    ax[2].plot(chiEkman[1, :], z[1, :], label="analytical", ls="--")
+    ax[2].plot(chi_I[1, :], z[1, :], label="interior", ls=":")
+    ax[2].axvline(0, lw=0.5, c="k", ls="-")
+    ax[2].set_xlabel(L"$\chi$ (m$^2$ s$^{-1}$)")
+    ax[2].set_ylabel(L"$z$ (m)")
+    ax[2].set_xlim([-0.0004, 0.002])
+    ax[2].set_ylim([-1000, -900])
+    tight_layout()
+    savefig("chi_vs_chiEkman1D.pdf")
+    close()
 end
 
 function compareRC20ridgePlots()
@@ -131,21 +189,53 @@ function compareRC20profilePlots()
     # index
     iξ = 1
 
+    # color map
+    colors = pl.cm.viridis(range(1, 0, length=5))
+
     # plot strat
     fig, ax = plt.subplots(1)
-    ax.plot(N^2 .+ bz1000[iξ, :], z[iξ, :], label="Day 1000")
-    ax.plot(N^2 .+ bz2000[iξ, :], z[iξ, :], label="Day 2000")
-    ax.plot(N^2 .+ bz3000[iξ, :], z[iξ, :], label="Day 3000")
-    ax.plot(N^2 .+ bz4000[iξ, :], z[iξ, :], label="Day 4000")
-    ax.plot(N^2 .+ bz5000[iξ, :], z[iξ, :], label="Day 5000")
+    ax.plot(N^2 .+ bz1000[iξ, :], z[iξ, :], c=colors[1, :], label="Day 1000")
+    ax.plot(N^2 .+ bz2000[iξ, :], z[iξ, :], c=colors[2, :], label="Day 2000")
+    ax.plot(N^2 .+ bz3000[iξ, :], z[iξ, :], c=colors[3, :], label="Day 3000")
+    ax.plot(N^2 .+ bz4000[iξ, :], z[iξ, :], c=colors[4, :], label="Day 4000")
+    ax.plot(N^2 .+ bz5000[iξ, :], z[iξ, :], c=colors[5, :], label="Day 5000")
     ax.legend(fontsize=6)
     ax.set_xlim([0, 1.4e-6])
-    ax.set_xlabel(L"$B_z$, (s$^{-2}$)")
-    ax.set_ylabel(L"$z$, (m)")
-    ax.set_title("stratification")
+    ax.set_xlabel(L"stratification, $B_z$ (s$^{-2}$)")
+    ax.set_ylabel(L"$z$ (m)")
     ax.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
     tight_layout()
     savefig("strat.pdf")
+
+    # plot u
+    fig, ax = plt.subplots(1)
+    ax.plot(u1000[iξ, :], z[iξ, :], c=colors[1, :], label="Day 1000")
+    ax.plot(u2000[iξ, :], z[iξ, :], c=colors[2, :], label="Day 2000")
+    ax.plot(u3000[iξ, :], z[iξ, :], c=colors[3, :], label="Day 3000")
+    ax.plot(u4000[iξ, :], z[iξ, :], c=colors[4, :], label="Day 4000")
+    ax.plot(u5000[iξ, :], z[iξ, :], c=colors[5, :], label="Day 5000")
+    ax.legend(fontsize=6)
+    ax.set_xlim([-5e-5, 20e-5])
+    ax.set_ylim([-1000, -800])
+    ax.set_xlabel(L"cross-ridge flow, $u$ (m s$^{-1}$)")
+    ax.set_ylabel(L"$z$ (m)")
+    ax.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
+    tight_layout()
+    savefig("u.pdf")
+
+    # plot v
+    fig, ax = plt.subplots(1)
+    ax.plot(v1000[iξ, :], z[iξ, :], c=colors[1, :], label="Day 1000")
+    ax.plot(v2000[iξ, :], z[iξ, :], c=colors[2, :], label="Day 2000")
+    ax.plot(v3000[iξ, :], z[iξ, :], c=colors[3, :], label="Day 3000")
+    ax.plot(v4000[iξ, :], z[iξ, :], c=colors[4, :], label="Day 4000")
+    ax.plot(v5000[iξ, :], z[iξ, :], c=colors[5, :], label="Day 5000")
+    ax.legend(fontsize=6)
+    ax.set_xlim([-2.5e-2, 2e-2])
+    ax.set_xlabel(L"along-ridge flow, $v$ (m s$^{-1}$)")
+    ax.set_ylabel(L"$z$ (m)")
+    tight_layout()
+    savefig("v.pdf")
 end
 
 #= function profilePlotInit() =#

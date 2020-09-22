@@ -134,6 +134,7 @@ function evolveFullNL(nSteps)
     nPts = nξ*nσ
 
     # timestep
+    #= Δt = 43200 =#
     Δt = 10*86400
     nStepsInvert = 1
     nStepsPlot = 10
@@ -160,6 +161,8 @@ function evolveFullNL(nSteps)
     # initial condition
     t = 0
     b = zeros(nξ, nσ)
+    #= t = 800*86400 =#
+    #= b, chi, uξ, uη, uσ, U = pointwise1D(800*86400, inversionLHS) =#
     #= # load data =#
     #= file = h5open("b.h5", "r") =#
     #= b = read(file, "b") =#
@@ -193,10 +196,11 @@ function evolveFullNL(nSteps)
 
         # function to compute advection RHS
         # (note the parentheses here to allow for sparse matrices to work first)
-        fAdvRHS(bVec) = -(uξVec.*(ξDerivativeMat*bVec) + uσVec.*(σDerivativeMat*bVec) + uσVec.*HVec*N^2)
-
+        #= fAdvRHS(bVec) = -(uξVec.*(ξDerivativeMat*bVec) + uσVec.*(σDerivativeMat*bVec) + uσVec.*HVec*N^2) =#
+        #= println(maximum(abs.(fAdvRHS(bVec)))) =#
+        
         # explicit timestep for advection
-        advRHS = explicitRHS(Δt, bVec, fAdvRHS)
+        #= advRHS = explicitRHS(Δt, bVec, fAdvRHS) =#
         #= println(maximum(abs.(advRHS))) =#
         #= bVec += advRHS =#
 
@@ -223,19 +227,19 @@ function evolveFullNL(nSteps)
             uσVec = reshape(uσ, nPts, 1)
             uξCFL = minimum(abs.(dξ./uξ))
             uσCFL = minimum(abs.(dσ./uσ))
-            #= println(@sprintf("CFL uξ: %.2f days", uξCFL/86400)) =#
-            #= println(@sprintf("CFL uσ: %.2f days", uσCFL/86400)) =#
-            if 0.01*minimum([uξCFL, uσCFL]) < Δt && adaptiveTimestep
-                # need to have smaller step size by CFL
-                Δt = 0.01*minimum([uξCFL, uσCFL])
-                println(@sprintf("Decreasing timestep to %.2f days", Δt/86400))
-                evolutionLHS = lu(getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy))
-            elseif 0.01*minimum([uξCFL, uσCFL]) > 10*Δt && Δt < 10*86400 && adaptiveTimestep
-                # could have much larger step size by CFL
-                Δt = 0.01*minimum([uξCFL, uσCFL])
-                println(@sprintf("Increasing timestep to %.2f days", Δt/86400))
-                evolutionLHS = lu(getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy))
-            end
+            println(@sprintf("CFL uξ: %.2f days", uξCFL/86400))
+            println(@sprintf("CFL uσ: %.2f days", uσCFL/86400))
+            #= if 0.01*minimum([uξCFL, uσCFL]) < Δt && adaptiveTimestep =#
+            #=     # need to have smaller step size by CFL =#
+            #=     Δt = 0.01*minimum([uξCFL, uσCFL]) =#
+            #=     println(@sprintf("Decreasing timestep to %.2f days", Δt/86400)) =#
+            #=     evolutionLHS = lu(getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy)) =#
+            #= elseif 0.01*minimum([uξCFL, uσCFL]) > 10*Δt && Δt < 10*86400 && adaptiveTimestep =#
+            #=     # could have much larger step size by CFL =#
+            #=     Δt = 0.01*minimum([uξCFL, uσCFL]) =#
+            #=     println(@sprintf("Increasing timestep to %.2f days", Δt/86400)) =#
+            #=     evolutionLHS = lu(getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy)) =#
+            #= end =#
         end
         if i % nStepsPlot == 0
             # plot flow

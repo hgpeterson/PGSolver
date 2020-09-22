@@ -40,5 +40,6 @@ z = repeat(σ', nξ, 1).*repeat(H.(ξ), 1, nσ)
 h = 200
 κ = κ1*ones(nξ, nσ)
 #= κ = @. κ0 + κ1*exp(-(z + H(x))/h) =#
-println("Ekman layer thickness ~ ", sqrt(2*Pr*κ1/abs(f)))
+    
+println("boundary layer thickness ~ ", sqrt(r*N^2*Hx(x[1, 1])^2/(κ[1, 1]*(f^2 + r^2)))^-1)
 println("z[2] - z[1] ~ ", H0*(σ[2] - σ[1]))

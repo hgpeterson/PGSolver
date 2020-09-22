@@ -170,7 +170,6 @@ See CF18 for details.
 function pointwise1D(t, inversionLHS)
     # inverse boundary layer thickness
     q = @. sqrt(r*N^2*Hx(x)^2/(κ*(f^2 + r^2)))
-    println(q[:, 1])
 
     # time dependent analytical buoyancy solution (only works for constant κ)
     z1D = @. z + H(x)
@@ -183,7 +182,16 @@ function pointwise1D(t, inversionLHS)
 end
 
 
-### example: show 1D solution at t = 100 days
-inversionLHS = lu(getInversionLHS())
-b, chi, uξ, uη, uσ, U = pointwise1D(800*86400, inversionLHS)
-plotCurrentState(800*86400, chi, uξ, uη, uσ, b, 999)
+#= ### example: show 1D solution =# 
+#= inversionLHS = lu(getInversionLHS()) =#
+
+#= ax = profilePlotInit() =#
+#= iξ = 1 =#
+
+#= for t=500*(1:5) =#
+#=     b, chi, uξ, uη, uσ, U = pointwise1D(t*86400, inversionLHS) =#
+#=     #1= plotCurrentState(t*86400, chi, uξ, uη, uσ, b, 999) =1# =#
+#=     profilePlot(ax, uξ, uη, uσ, b, iξ, t) =#
+#= end =#
+#= ax[1, 1].legend() =#
+#= savefig("profiles1d.png") =#
