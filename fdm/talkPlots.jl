@@ -139,11 +139,41 @@ function compareRC20ridgePlots()
     u, v, w = transformFromTF(uξ, uη, uσ)
 
     # plot
-    ridgePlot(u, b, "cross-ridge velocity", L"$u$ (m s$^{-1}$)"; vext=5e-5)
+    #= ridgePlot(u, b, "cross-ridge velocity", L"$u$ (m s$^{-1}$)"; vext=5e-5) =#
+    ridgePlot(u, b, "cross-ridge velocity", L"$u$ (m s$^{-1}$)"; vext=1e-5)
     savefig("u1000.pdf")
     close()
-    ridgePlot(v, b, "along-ridge velocity", L"$v$ (m s$^{-1}$)"; vext=2e-2)
+    #= ridgePlot(v, b, "along-ridge velocity", L"$v$ (m s$^{-1}$)"; vext=2e-2) =#
+    ridgePlot(v, b, "along-ridge velocity", L"$v$ (m s$^{-1}$)")
     savefig("v1000.pdf")
+    close()
+end
+
+function pressureRidgePlots()
+    # read
+    file = h5open("b1000.h5", "r")
+    b = read(file, "b")
+    t = read(file, "t")
+    close(file)
+
+    # compute p_x
+    chi, uξ, uη, uσ, U = invert(b, inversionLHS)
+    u, v, w = transformFromTF(uξ, uη, uσ)
+    px = f*v + zDerivativeTF(Pr*κ.*zDerivativeTF(u)) 
+
+    # compute p
+    p = zeros(size(b))
+    p[:, end] = cumtrapz(px, ξ) # assum p = 0 at top left
+    for i=1:nξ
+        hydrostatic = H(ξ[i])*cumtrapz(b[i, :], σ)
+        p[i, :] = hydrostatic .+ (p[i, end] - hydrostatic[end]) # integration constant from int(px)
+    end
+
+    ridgePlot(p, b, "pressure", L"$p$ (m$^2$ s$^{-2}$)"; cmap="viridis")
+    savefig("p1000.pdf")
+    close()
+    ridgePlot(px, b, "pressure gradient", L"$p_x$ (m s$^{-2}$)")
+    savefig("px1000.pdf")
     close()
 end
 
@@ -214,7 +244,7 @@ function compareRC20profilePlots()
     ax.plot(u3000[iξ, :], z[iξ, :], c=colors[3, :], label="Day 3000")
     ax.plot(u4000[iξ, :], z[iξ, :], c=colors[4, :], label="Day 4000")
     ax.plot(u5000[iξ, :], z[iξ, :], c=colors[5, :], label="Day 5000")
-    ax.legend(fontsize=6)
+    ax.legend()
     ax.set_xlim([-5e-5, 20e-5])
     ax.set_ylim([-1000, -800])
     ax.set_xlabel(L"cross-ridge flow, $u$ (m s$^{-1}$)")
@@ -230,7 +260,7 @@ function compareRC20profilePlots()
     ax.plot(v3000[iξ, :], z[iξ, :], c=colors[3, :], label="Day 3000")
     ax.plot(v4000[iξ, :], z[iξ, :], c=colors[4, :], label="Day 4000")
     ax.plot(v5000[iξ, :], z[iξ, :], c=colors[5, :], label="Day 5000")
-    ax.legend(fontsize=6)
+    ax.legend()
     ax.set_xlim([-2.5e-2, 2e-2])
     ax.set_xlabel(L"along-ridge flow, $v$ (m s$^{-1}$)")
     ax.set_ylabel(L"$z$ (m)")
@@ -321,4 +351,5 @@ end
 
 #= compareChiEkman() =#
 #= compareRC20ridgePlots() =#
-compareRC20profilePlots()
+pressureRidgePlots()
+#= compareRC20profilePlots() =#

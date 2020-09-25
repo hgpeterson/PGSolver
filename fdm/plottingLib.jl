@@ -13,7 +13,7 @@ handle `ax`.
 
 Optional: set the vmin/vmax manually with vext.
 """
-function ridgePlot(field, b, titleString, cbarLabel; vext=nothing)
+function ridgePlot(field, b, titleString, cbarLabel; vext=nothing, cmap="RdBu_r")
     # full buoyancy for isopycnals
     B = N^2*z + b 
 
@@ -23,14 +23,23 @@ function ridgePlot(field, b, titleString, cbarLabel; vext=nothing)
     if vext == nothing
         vmax = maximum(abs.(field))
         vmin = -vmax
+        extend = "neither"
     else
         vmax = vext
         vmin = -vext
+        extend = "both"
+    end
+
+    # regular min and max for viridis
+    if cmap == "viridis"
+        vmin = minimum(field)
+        vmax = maximum(field)
+        extend = "neither"
     end
 
     # 2D plot
-    img = ax.pcolormesh(x/1000, z, field, cmap="RdBu_r", vmin=vmin, vmax=vmax, rasterized=true)
-    cb = colorbar(img, ax=ax, label=cbarLabel)
+    img = ax.pcolormesh(x/1000, z, field, cmap=cmap, vmin=vmin, vmax=vmax, rasterized=true)
+    cb = colorbar(img, ax=ax, label=cbarLabel, extend=extend)
     cb.ax.ticklabel_format(style="sci", scilimits=(-3, 3))
 
     # isopycnal contours
