@@ -5,37 +5,6 @@
 ################################################################################
 using SparseArrays, LinearAlgebra
 
-include("setParams.jl")
-include("myJuliaLib.jl")
-include("terrainFollowing.jl")
-
-# buoyancy perturbation
-#= b = zeros(nξ, nσ) =#
-#= bx = zeros(nξ, nσ) =#
-#= for i=1:nξ =#
-#=     for j=1:nσ =#
-#=         # exponential in σ (centered at bottom) =#
-#=         decay_scale = 200/H0 =#
-#=         A = decay_scale*N^2*H0 =#
-#=         b[i, j] = A*exp(-N^2*H(ξ[i])*(σ[j] + 1)/A) =#
-#=         bx[i, j] = -N^2*Hx(ξ[i])*exp(-N^2*H(ξ[i])*(σ[j] + 1)/A) =#
-
-#=         #1= # gaussian in σ (centered at bottom) =1# =#
-#=         #1= b[i, j] = N^2*amp*exp(-(σ[j] + 1)^2/2/(1/4)^2) =1# =#
-#=         #1= bx[i, j] = N^2*amp*exp(-(σ[j] + 1)^2/2/(1/4)^2)*(σ[j] + 1)/(1/4)^2*σ[j]*Hx(ξ[i])/H(ξ[i]) =1# =#
-#=     end =#
-#= end =#
-
-#= b = @. h*N^2*exp(-(z + H(x))/h) =#
-#= #1= bx = @. -N^2*Hx(x)*exp(-(z + H(x))/h) =1# =#
-#= bx = zeros(nξ, nσ) =#
-#= for j=1:nσ =#
-#=     bx[:, j] = differentiate(b[:, j], ξ) =#
-#= end =#
-#= for i=1:nξ =#
-#=     bx[i, :] .-= Hx(ξ[i])*σ.*differentiate(b[i, :], σ)/H(ξ[i]) =#
-#= end =#
-
 """
     LHS = getInversionLHS()
 
@@ -96,7 +65,7 @@ function getInversionLHS()
             # dσσσσ stencil
             fd_σσσσ = mkfdstencil(σ[j-2:j+2], σ[j], 4)
             
-            # eqtn: dσσ(nu*dσσ(chi))/H^4 + f^2*chi/nu + f*U = dξ(b) - dx(H)*σ*dσ(b)/H
+            # eqtn: dσσ(nu*dσσ(chi))/H^4 + f^2*(chi - U)/nu = dξ(b) - dx(H)*σ*dσ(b)/H
             # term 1 (product rule)
             push!(A, (row, umap[i, j-1], Pr*κ_σσ*fd_σσ[1]/H(ξ[i])^4))
             push!(A, (row, umap[i, j],   Pr*κ_σσ*fd_σσ[2]/H(ξ[i])^4))
@@ -116,7 +85,7 @@ function getInversionLHS()
             # term 2
             push!(A, (row, umap[i, j], f^2/(Pr*κ[i, j])))
             # term 3
-            push!(A, (row, iU, f))
+            push!(A, (row, iU, f^2/(Pr*κ[i, j])))
             # term 4 (rhs)
         end
     end
@@ -199,20 +168,20 @@ function getInversionRHS(b)
     return rhs
 end
 
-"""
-    sol = solveSystem(b)
+#= """ =#
+#=     sol = solveSystem(b) =#
 
-Setup and solve linear system.
-"""
-function solveSystem(b)
-    # get matrix and vector
-    LHS = getInversionLHS()
-    RHS = getInversionRHS(b)
+#= Setup and solve linear system. =#
+#= """ =#
+#= function solveSystem(b) =#
+#=     # get matrix and vector =#
+#=     LHS = getInversionLHS() =#
+#=     RHS = getInversionRHS(b) =#
 
-    # solve 
-    sol = LHS \ RHS
-    return sol
-end
+#=     # solve =# 
+#=     sol = LHS \ RHS =#
+#=     return sol =#
+#= end =#
 
 """
     chi, uξ, uη, uσ, U = postProcess(sol)
@@ -363,8 +332,8 @@ function getInversionLHS1DAdjusted()
             push!(A, (row, umap[i, j],   Pr*κ[i, j]*fd_σσσσ[3]/H(ξ[i])^4))
             push!(A, (row, umap[i, j+1], Pr*κ[i, j]*fd_σσσσ[4]/H(ξ[i])^4))
             push!(A, (row, umap[i, j+2], Pr*κ[i, j]*fd_σσσσ[5]/H(ξ[i])^4))
-            # term 2 (cos(θ)^2 = 1/(1 + Hx^2))
-            push!(A, (row, umap[i, j], f^2/(1 + Hx(ξ[i])^2)/(Pr*κ[i, j])))
+            # term 2 
+            push!(A, (row, umap[i, j], f^2*cosθ[i, j]^2/(Pr*κ[i, j])))
         end
     end
 
@@ -380,14 +349,7 @@ end
 Setup right hand side of linear system for the adjusted 1D problem.
 """
 function getInversionRHS1DAdjusted(b)
-    # sin(θ)
-    sinθ = @. -Hx(ξξ)/sqrt(1 + Hx(ξξ)^2)
-    # cos(θ)
-    cosθ = @. 1/sqrt(1 + Hx(ξξ)^2) 
-
-    #= U = 0 # for now set vertically integrated cross-slope flow to zero =#
-    U = @. κ0*cosθ/sinθ
-    #= ridgePlot(U, b, "U", "") =#
+    U = zeros(size(z)) # set vertically integrated cross-slope flow to zero
 
     nPts = nξ*nσ
     umap = reshape(1:nPts, nξ, nσ)    
@@ -405,23 +367,16 @@ function getInversionRHS1DAdjusted(b)
 end
 
 """
-    chi, u, v, w = postProcess1DAdjusted(sol)
+    chi, u, v, w, U = postProcess1DAdjusted(sol)
 
 Take solution `sol` for adjusted 1D problem and extract reshaped `chi`. Compute `u`, `v`, `w`
 from definition of chi and equations.
 """
 function postProcess1DAdjusted(sol)
-    # sin(θ)
-    sinθ = @. -Hx(ξξ)/sqrt(1 + Hx(ξξ)^2)
-    # cos(θ)
-    cosθ = @. 1/sqrt(1 + Hx(ξξ)^2) 
-
-    #= U = 0 # for now set vertically integrated cross-slope flow to zero =#
-    U = @. κ0*cosθ/sinθ
+    U = zeros(size(z)) # set vertically integrated cross-slope flow to zero
 
     # reshape 
-    chi = reshape(sol[1:end], nξ, nσ)
-
+    chi = reshape(sol, nξ, nσ)
 
     # compute û = dẑ(chi)
     û = -sinθ.*xDerivativeTF(chi) .+ cosθ.*zDerivativeTF(chi)
@@ -437,23 +392,35 @@ function postProcess1DAdjusted(sol)
     for i=1:nξ
         v[i, :] = cumtrapz(f*cosθ[i, :].*(chi[i, :] .- U[i, :])./(Pr*κ[i, :]), σ)*H(ξ[i])
     end
-
-    return chi, u, v, w
+    
+    return chi, u, v, w, U
 end
 
+"""
+    chi, uξ, uη, uσ, U = invert1DAdjusted(b, inversionLHS1DAdjusted)
 
-#= chi, uξ, uη, uσ, U = invert(b, inversionLHS) =#
-#= u, v, w = transformFromTF(uξ, uη, uσ) =#
-#= ridgePlot(chi, b, "chi", "") =#
-#= ridgePlot(u, b, "u", "") =#
-ridgePlot(v, b, "v", "")
-#= ridgePlot(w, b, "w", "") =#
+Wrapper function that inverts for flow given buoyancy perturbation `b`.
+"""
+function invert1DAdjusted(b, inversionLHS1DAdjusted)
+    # compute RHS
+    inversionRHS1DAdjusted = getInversionRHS1DAdjusted(b)
 
-#= inversionLHS1DAdjusted = getInversionLHS1DAdjusted() =#
-inversionRHS1DAdjusted = getInversionRHS1DAdjusted(b)
-sol = inversionLHS1DAdjusted\inversionRHS1DAdjusted
-chi1D, u1D, v1D, w1D = postProcess1DAdjusted(sol)
-#= ridgePlot(chi1D, b, "chi 1D", ""; vext=maximum(abs.(chi))) =#
-#= ridgePlot(u1D, b, "u 1D", ""; vext=maximum(abs.(u))) =#
-ridgePlot(v1D, b, "v 1D", ""; vext=maximum(abs.(v)))
-#= ridgePlot(w1D, b, "w 1D", "") =#
+    # solve
+    sol = inversionLHS1DAdjusted\inversionRHS1DAdjusted
+
+    # compute flow from sol
+    chi, u, v, w, U = postProcess1DAdjusted(sol)
+
+    #= # fixed v? =#
+    #= Px = zeros((nξ, nσ)) =#
+    #= bottomTurb = zDerivativeTF(Pr*κ.*zDerivativeTF(zDerivativeTF(chi))) =#
+    #= for i=1:nξ =#
+    #=     Px[i, :] .= b[i, 1]*sinθ[i, 1] + bottomTurb[i, 1] =#
+    #= end =#
+    #= v = @. -1/(f*cosθ)*(-Px + b*sinθ + bottomTurb) =#
+
+    # to TF
+    uξ, uη, uσ = transformToTF(u, v, w)
+
+    return chi, uξ, uη, uσ, U
+end

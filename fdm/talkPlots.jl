@@ -11,7 +11,7 @@ plt.style.use("~/paper_plots.mplstyle")
 pygui(false)
 
 # left-hand side for inversion equations
-#= inversionLHS = lu(getInversionLHS()) =#
+inversionLHS = lu(getInversionLHS())
 
 function compareChiEkman()
     file = h5open("b1000.h5", "r")
@@ -146,6 +146,23 @@ function compareRC20ridgePlots()
     #= ridgePlot(v, b, "along-ridge velocity", L"$v$ (m s$^{-1}$)"; vext=2e-2) =#
     ridgePlot(v, b, "along-ridge velocity", L"$v$ (m s$^{-1}$)")
     savefig("v1000.pdf")
+    close()
+end
+
+function chiRidgePlot()
+    # read
+    file = h5open("b1000.h5", "r")
+    b = read(file, "b")
+    t = read(file, "t")
+    close(file)
+
+    # compute chi
+    chi, uξ, uη, uσ, U = invert(b, inversionLHS)
+
+    # plot
+    ridgePlot(chi, b, "streamfunction", L"$\chi$ (m$^2$ s$^{-1}$)")
+    savefig("chi1000.pdf", bbox_inches="tight")
+    savefig("chi1000.png", bbox_inches="tight", dpi=2000)
     close()
 end
 
@@ -351,5 +368,6 @@ end
 
 #= compareChiEkman() =#
 #= compareRC20ridgePlots() =#
-pressureRidgePlots()
+chiRidgePlot()
+#= pressureRidgePlots() =#
 #= compareRC20profilePlots() =#

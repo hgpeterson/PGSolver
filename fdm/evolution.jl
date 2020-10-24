@@ -1,13 +1,4 @@
-using SparseArrays, PyPlot, LinearAlgebra, Printf, HDF5
-
-close("all")
-plt.style.use("~/presentation_plots.mplstyle")
-pygui(false)
-
-include("setParams.jl")
-include("myJuliaLib.jl")
-include("plottingLib.jl")
-include("inversion.jl")
+using SparseArrays, LinearAlgebra, Printf, HDF5
 
 """
     matrices = getEvolutionMatrices()
@@ -91,13 +82,6 @@ end
 Compute `dy`, the change in `y` given a timestep of `Δt` and that `dt(y) = f(y)`.
 """
 function explicitRHS(Δt, y, f)
-    #= # euler =#
-    #= return Δt*f(y) =#
-    #= # midpoint =#
-	#= f1 = f(y) =#
-    #= f2 = f(y + Δt*f1/2) =#
-	#= dy = Δt*f2 =#
-    #= return dy =#
     # RK4
 	f1 = f(y)
     f2 = f(y + Δt*f1/2)
@@ -125,11 +109,11 @@ function getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy)
 end
 
 """
-    b = evolveFullNL(nSteps)
+    b = evolve(nSteps)
 
 Solve full nonlinear equation for `b` for `nSteps` time steps.
 """
-function evolveFullNL(nSteps)
+function evolve(nSteps)
     # grid points
     nPts = nξ*nσ
 
@@ -137,7 +121,7 @@ function evolveFullNL(nSteps)
     Δt = 10*86400
     nStepsInvert = 1
     nStepsPlot = 10
-    nStepsProfile = 100
+    nStepsSave = 100
     adaptiveTimestep = false
 
     # for flattening for matrix mult
@@ -175,10 +159,6 @@ function evolveFullNL(nSteps)
     # plot initial state of all zeros and no flow
     iImg = 0
     plotCurrentState(t, chi, chiEkman, uξ, uη, uσ, b, iImg)
-
-    # initialize plot of profiles
-    iξ = 1
-    ax = profilePlotInit()
 
     # flatten for matrix mult
     bVec = reshape(b, nPts, 1)
@@ -223,36 +203,31 @@ function evolveFullNL(nSteps)
             chi, uξ, uη, uσ, U = invert(b, inversionLHS)
             uξVec = reshape(uξ, nPts, 1)
             uσVec = reshape(uσ, nPts, 1)
-            #= uξCFL = minimum(abs.(dξ./uξ)) =#
-            #= uσCFL = minimum(abs.(dσ./uσ)) =#
-            #= println(@sprintf("CFL uξ: %.2f days", uξCFL/86400)) =#
-            #= println(@sprintf("CFL uσ: %.2f days", uσCFL/86400)) =#
-            #= if 0.5*minimum([uξCFL, uσCFL]) < Δt && adaptiveTimestep =#
-            #=     # need to have smaller step size by CFL =#
-            #=     Δt = 0.5*minimum([uξCFL, uσCFL]) =#
-            #=     println(@sprintf("Decreasing timestep to %.2f days", Δt/86400)) =#
-            #=     evolutionLHS = lu(getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy)) =#
-            #= elseif 0.5*minimum([uξCFL, uσCFL]) > 2*Δt && adaptiveTimestep =#
-            #=     # could have much larger step size by CFL =#
-            #=     Δt = minimum([0.5*minimum([uξCFL, uσCFL]), 1*86400]) =#
-            #=     println(@sprintf("Increasing timestep to %.2f days", Δt/86400)) =#
-            #=     evolutionLHS = lu(getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy)) =#
-            #= end =#
+            if adaptiveTimestep
+                uξCFL = minimum(abs.(dξ./uξ))
+                uσCFL = minimum(abs.(dσ./uσ))
+                println(@sprintf("CFL uξ: %.2f days", uξCFL/86400))
+                println(@sprintf("CFL uσ: %.2f days", uσCFL/86400))
+                if 0.5*minimum([uξCFL, uσCFL]) < Δt
+                    # need to have smaller step size by CFL
+                    Δt = 0.5*minimum([uξCFL, uσCFL])
+                    println(@sprintf("Decreasing timestep to %.2f days", Δt/86400))
+                    evolutionLHS = lu(getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy))
+                elseif 0.5*minimum([uξCFL, uσCFL]) > 2*Δt
+                    # could have much larger step size by CFL
+                    Δt = minimum([0.5*minimum([uξCFL, uσCFL]), 1*86400])
+                    println(@sprintf("Increasing timestep to %.2f days", Δt/86400))
+                    evolutionLHS = lu(getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy))
+                end
+            end
         end
         if i % nStepsPlot == 0
             # plot flow
             iImg += 1
             chiEkman = getChiEkman(b)
             plotCurrentState(t, chi, chiEkman, uξ, uη, uσ, b, iImg)
-
-            #= # save data =#
-            #= file = h5open("b.h5", "w") =#
-            #= write(file, "b", b) =#
-            #= write(file, "t", t) =#
-            #= close(file) =#
         end
-        if i % nStepsProfile == 0
-            profilePlot(ax, uξ, uη, uσ, b, iξ, tDays)
+        if i % nStepsSave == 0
             # save data
             file = h5open(@sprintf("b%d.h5", tDays), "w")
             write(file, "b", b)
@@ -261,11 +236,145 @@ function evolveFullNL(nSteps)
         end
     end
 
-    ax[1, 1].legend()
-    savefig("profiles.png")
+    b = reshape(bVec, nξ, nσ)
+
+    return b
+end
+
+"""
+    b = evolve1DAdjusted(nSteps)
+
+Solve full nonlinear equation for `b` for `nSteps` time steps using 
+1D Adjusted inversion.
+"""
+function evolve1DAdjusted(nSteps)
+    # grid points
+    nPts = nξ*nσ
+
+    # timestep
+    Δt = 10*86400
+    nStepsInvert = 1
+    nStepsPlot = 10
+    nStepsSave = 100
+    adaptiveTimestep = false
+
+    # for flattening for matrix mult
+    umap = reshape(1:nPts, nξ, nσ)    
+    bottomBdy = umap[:, 1]
+    topBdy = umap[:, nσ]
+
+    # get matrices and vectors
+    diffMat, diffVec, bdyFluxMat, ξDerivativeMat, σDerivativeMat = getEvolutionMatrices()
+
+    # left-hand side for evolution equation (save LU decomposition for speed)
+    evolutionLHS = lu(getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy))
+
+    # left-hand side for inversion equations
+    inversionLHS = lu(getInversionLHS1DAdjusted())
+
+    # vector of H values
+    HVec = reshape(H.(x), nPts, 1)
+
+    # initial condition
+    t = 0
+    b = zeros(nξ, nσ)
+    #= # load data =#
+    #= file = h5open("b.h5", "r") =#
+    #= b = read(file, "b") =#
+    #= t = read(file, "t") =#
+    #= close(file) =#
+
+    # invert initial condition
+    chi, uξ, uη, uσ, U = invert1DAdjusted(b, inversionLHS)
+    uξVec = reshape(uξ, nPts, 1)
+    uσVec = reshape(uσ, nPts, 1)
+    chiEkman = getChiEkman(b)
+    
+    # plot initial state of all zeros and no flow
+    iImg = 0
+    plotCurrentState(t, chi, chiEkman, uξ, uη, uσ, b, iImg)
+
+    # flatten for matrix mult
+    bVec = reshape(b, nPts, 1)
+    uξVec = reshape(uξ, nPts, 1)
+    uσVec = reshape(uσ, nPts, 1)
+
+    # main loop
+    for i=1:nSteps
+        t += Δt
+        tDays = t/86400
+
+        # implicit euler diffusion
+        diffRHS = bVec + diffVec*Δt
+
+        # function to compute advection RHS
+        # (note the parentheses here to allow for sparse matrices to work first)
+        fAdvRHS(bVec) = -(uξVec.*(ξDerivativeMat*bVec) + uσVec.*(σDerivativeMat*bVec) + uσVec.*HVec*N^2)
+
+        # explicit timestep for advection
+        advRHS = explicitRHS(Δt, bVec, fAdvRHS)
+        #= println(maximum(abs.(advRHS))) =#
+        #= bVec += advRHS =#
+
+        # sum the two
+        evolutionRHS = diffRHS + advRHS
+        #= evolutionRHS = diffRHS =# 
+
+        # no flux top boundary
+        evolutionRHS[bottomBdy] .= -N^2
+
+        # decay at top
+        evolutionRHS[topBdy] .= 0
+
+        # solve
+        bVec = evolutionLHS\evolutionRHS
+
+        # log
+        println(@sprintf("t = %.2f days (i = %d)", tDays, i))
+        if i % nStepsInvert == 0
+            # reshape
+            b = reshape(bVec, nξ, nσ)
+
+            # invert buoyancy for flow
+            chi, uξ, uη, uσ, U = invert1DAdjusted(b, inversionLHS)
+            uξVec = reshape(uξ, nPts, 1)
+            uσVec = reshape(uσ, nPts, 1)
+            if adaptiveTimestep
+                uξCFL = minimum(abs.(dξ./uξ))
+                uσCFL = minimum(abs.(dσ./uσ))
+                println(@sprintf("CFL uξ: %.2f days", uξCFL/86400))
+                println(@sprintf("CFL uσ: %.2f days", uσCFL/86400))
+                if 0.5*minimum([uξCFL, uσCFL]) < Δt
+                    # need to have smaller step size by CFL
+                    Δt = 0.5*minimum([uξCFL, uσCFL])
+                    println(@sprintf("Decreasing timestep to %.2f days", Δt/86400))
+                    evolutionLHS = lu(getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy))
+                elseif 0.5*minimum([uξCFL, uσCFL]) > 2*Δt
+                    # could have much larger step size by CFL
+                    Δt = minimum([0.5*minimum([uξCFL, uσCFL]), 1*86400])
+                    println(@sprintf("Increasing timestep to %.2f days", Δt/86400))
+                    evolutionLHS = lu(getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy))
+                end
+            end
+        end
+        if i % nStepsPlot == 0
+            # plot flow
+            iImg += 1
+            chiEkman = getChiEkman(b)
+            plotCurrentState(t, chi, chiEkman, uξ, uη, uσ, b, iImg)
+        end
+        if i % nStepsSave == 0
+            # save data
+            dfile = @sprintf("b%d.h5", tDays)
+            file = h5open(dfile, "w")
+            write(file, "b", b)
+            write(file, "t", t)
+            close(file)
+            println("Saved: ", dfile)
+        end
+    end
 
     b = reshape(bVec, nξ, nσ)
 
     return b
 end
-b = evolveFullNL(500)
