@@ -58,3 +58,17 @@ function differentiate(f, z)
 
     return fz
 end
+
+"""
+    dy = RK4(t, Δt, y, f)
+
+Compute `dy`, the change in `y` given a timestep of `Δt` and that `dt(y, t) = f(y, t)`.
+"""
+function RK4(t, Δt, y, f)
+	f1 = f(y, t)
+    f2 = f(y + Δt*f1/2, t + Δt/2)
+    f3 = f(y + Δt*f2/2, t + Δt/2)
+    f4 = f(y + Δt*f3, t + Δt)
+	dy = Δt/6*(f1 + 2*f2 + 2*f3 + f4)
+    return dy
+end

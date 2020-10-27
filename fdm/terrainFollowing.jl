@@ -2,6 +2,8 @@
 # Useful functions for terrain following coordinates
 ################################################################################
 
+include("myJuliaLib.jl")
+
 """
     fξ = ξDerivativeTF(field)
 

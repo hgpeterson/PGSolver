@@ -5,6 +5,8 @@
 ################################################################################
 using SparseArrays, LinearAlgebra
 
+include("terrainFollowing.jl")
+
 """
     LHS = getInversionLHS()
 

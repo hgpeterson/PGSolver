@@ -2,12 +2,13 @@
 # Functions useful for plotting
 ################################################################################
 
-using PyPlot, Printf
+using PyPlot, PyCall, Printf
 
 plt.style.use("~/paper_plots.mplstyle")
 close("all")
 pygui(false)
 
+pl = pyimport("matplotlib.pylab")
 
 """
     ax = ridgePlot(field, b, titleString, cbarLabel; vext)
@@ -162,9 +163,7 @@ function profilePlot1DAdjusted(datafiles, iξ)
 
     # left-hand side for inversion equations
     inversionLHS = lu(getInversionLHS1DAdjusted())
-    #= inversionLHS = lu(getInversionLHS()) =#
 
-    #= fig2, ax2 = subplots(1) =#
     # plot data from `datafiles`
     for bfile in datafiles
         file = h5open(bfile, "r")
@@ -174,12 +173,6 @@ function profilePlot1DAdjusted(datafiles, iξ)
 
         # invert buoyancy for flow
         chi, uξ, uη, uσ, U = invert1DAdjusted(b, inversionLHS)
-        #= chi, uξ, uη, uσ, U = invert(b, inversionLHS) =#
-
-        #= ax2.plot(f*cosθ[iξ, :].*(chi[iξ, :] .- U[iξ, :])./(Pr*κ[iξ, :])*H(ξ[iξ]), z[iξ, :]) =#
-        #= ax2.plot(chi[iξ, :], z[iξ, :]) =#
-        #= ax2.plot(xDerivativeTF(b)[iξ, :], z[iξ, :]) =#
-        #= ax2.plot(-zDerivativeTF(b)[iξ, :].*sinθ[iξ, :], z[iξ, :]) =#
 
         # convert to physical coordinates 
         u, v, w = transformFromTF(uξ, uη, uσ)
@@ -197,9 +190,84 @@ function profilePlot1DAdjusted(datafiles, iξ)
     ax[1, 1].legend()
 
     fig.savefig("profiles.png")
-    #= fig2.savefig("bx.png") =#
-    #= fig2.savefig("bzsin.png") =#
-    #= fig2.savefig("chi1DAdjusted1.png") =#
+end
+
+"""
+    profilePlot1D(datafiles, iξ)
+
+Plot profiles of b, u, v, w from HDF5 snapshot files of buoyancy in the `datafiles` list
+at ξ = ξ[iξ].
+"""
+function profilePlot1D(datafiles, iξ)
+    # init plot
+    #= fig, ax = subplots(2, 2, figsize=(6.5, 6.5/1.62), sharey=true) =#
+    fig, ax = subplots(2, 2, figsize=(6.5, 6.5/1.62))
+
+    ax[1, 1].set_xlabel(L"$u$ (m s$^{-1}$)")
+    ax[1, 1].set_ylabel(L"$z$ (m)")
+    ax[1, 1].set_title("cross-ridge velocity")
+
+    ax[1, 2].set_xlabel(L"$v$ (m s$^{-1}$)")
+    ax[1, 2].set_title("along-ridge velocity")
+
+    ax[2, 1].set_xlabel(L"$w$ (m s$^{-1}$)")
+    ax[2, 1].set_ylabel(L"$z$ (m)")
+    ax[2, 1].set_title("vertical velocity")
+
+    ax[2, 2].set_xlabel(L"$B_z$ (s$^{-2}$)")
+    ax[2, 2].set_title("stratification")
+
+    tight_layout()
+
+    ax[1, 1].ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
+    ax[1, 2].ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
+    ax[2, 1].ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
+    ax[2, 2].ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
+
+    # color map
+    colors = pl.cm.viridis(range(1, 0, length=5))
+
+    # plot data from `datafiles`
+    for i=1:size(datafiles, 1)
+        file = h5open(datafiles[i], "r")
+        u = read(file, "u")
+        v = read(file, "v")
+        w = read(file, "w")
+        b = read(file, "b")
+        t = read(file, "t")
+        close(file)
+
+        # for stratification
+        #= bz = zDerivativeTF(b) =#
+        #= Bz = N^2 .+ bz =#
+        bz = differentiate(b, z[iξ, :])
+        Bz = N^2*cosθ[iξ, 1] .+ bz
+
+        # plot
+        if t == Inf
+            label = "Steady State"
+            c = "k"
+        else
+            label = string("Day ", Int64(round(t/86400)))
+            c = colors[i, :]
+        end
+        #= ax[1, 1].plot(u[iξ, :], z[iξ, :], label=string("Day ", Int64(round(t/86400)))) =#
+        #= ax[1, 2].plot(v[iξ, :], z[iξ, :]) =#
+        #= ax[2, 1].plot(w[iξ, :], z[iξ, :]) =#
+        #= ax[2, 2].plot(N^2 .+ bz[iξ, :], z[iξ, :]) =#
+        ax[1, 1].plot(u,  z[iξ, :], c=c, label=label)
+        ax[1, 2].plot(v,  z[iξ, :], c=c)
+        ax[2, 1].plot(w,  z[iξ, :], c=c)
+        ax[2, 2].plot(Bz, z[iξ, :], c=c)
+    end
+
+    ax[1, 1].legend()
+    ax[1, 1].set_ylim([-H(ξ[iξ]), -H(ξ[iξ]) + 200])
+    ax[1, 2].set_ylim([-H(ξ[iξ]), -H(ξ[iξ]) + 1000])
+    ax[2, 1].set_ylim([-H(ξ[iξ]), -H(ξ[iξ]) + 200])
+    ax[2, 2].set_ylim([-H(ξ[iξ]), -H(ξ[iξ]) + 1000])
+
+    fig.savefig("profiles.png")
 end
 
 """
@@ -220,6 +288,24 @@ function plotCurrentState(t, chi, chiEkman, uξ, uη, uσ, b, iImg)
     savefig(@sprintf("chiEkman%03d.png", iImg))
     close()
 
+    ridgePlot(b, b, @sprintf("buoyancy perturbation at t = %4d days", t/86400), L"$b$ (m s$^{-2}$)")
+    savefig(@sprintf("b%03d.png", iImg))
+    close()
+
+    ridgePlot(u, b, @sprintf("cross-ridge velocity at t = %4d days", t/86400), L"$u$ (m s$^{-1}$)")
+    savefig(@sprintf("u%03d.png", iImg))
+    close()
+
+    ridgePlot(v, b, @sprintf("along-ridge velocity at t = %4d days", t/86400), L"$v$ (m s$^{-1}$)")
+    savefig(@sprintf("v%03d.png", iImg))
+    close()
+
+    ridgePlot(w, b, @sprintf("vertical velocity at t = %4d days", t/86400), L"$w$ (m s$^{-1}$)")
+    savefig(@sprintf("w%03d.png", iImg))
+    close()
+end
+function plotCurrentState(t, u, v, w, b, iImg)
+    # plots
     ridgePlot(b, b, @sprintf("buoyancy perturbation at t = %4d days", t/86400), L"$b$ (m s$^{-2}$)")
     savefig(@sprintf("b%03d.png", iImg))
     close()
