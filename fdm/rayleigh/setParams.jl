@@ -1,6 +1,8 @@
+using Printf
+
 # parameters (as in RC20)
-L = 4e6
-H0 = 4e3
+L = 2e6
+H0 = 2e3
 Pr = 1e0
 f = -5.5e-5
 N = 1e-3
@@ -30,9 +32,10 @@ dσ[:, end] = dσ[:, end-1]
 # domain in physical (x, z) space (2D arrays)
 x = repeat(ξ, 1, nσ)
 z = repeat(σ', nξ, 1).*repeat(H.(ξ), 1, nσ)
-#= dz = zeros(nξ, nσ) =#
-#= dz[:, 1:end-1] = z[:, 2:end] - z[:, 1:end-1] =#
-#= dz[:, end] = dz[:, end-1] =#
+
+# arrays of sin(θ) and cos(θ) for 1D solutions
+sinθ = @. -Hx(ξξ)/sqrt(1 + Hx(ξξ)^2)
+cosθ = @. 1/sqrt(1 + Hx(ξξ)^2) 
 
 # diffusivity
 κ0 = 6e-5
@@ -41,5 +44,22 @@ h = 200
 κ = κ1*ones(nξ, nσ)
 #= κ = @. κ0 + κ1*exp(-(z + H(x))/h) =#
     
-println("boundary layer thickness ~ ", sqrt(r*N^2*Hx(x[1, 1])^2/(κ[1, 1]*(f^2 + r^2)))^-1)
-println("z[2] - z[1] ~ ", H0*(σ[2] - σ[1]))
+# print properties
+println("\nPGSolver with Parameters\n")
+
+println(@sprintf("nξ = %d", nξ))
+println(@sprintf("nσ = %d\n", nσ))
+
+println(@sprintf("L  = %d km", L/1000))
+println(@sprintf("H0 = %d m", H0))
+println(@sprintf("Pr = %1.1f", Pr))
+println(@sprintf("f  = %1.1e s-1", f))
+println(@sprintf("N  = %1.1e s-1", N))
+println(@sprintf("β  = %1.1e m-1 s-1", β))
+println(@sprintf("r  = %1.1e s-1", r))
+println(@sprintf("κ0 = %1.1e m2 s-1", κ0))
+println(@sprintf("κ1 = %1.1e m2 s-1", κ1))
+println(@sprintf("h  = %d m", h))
+
+println(@sprintf("\nBL thickness ~ %1.2f m", sqrt(r*N^2*Hx(x[1, 1])^2/(κ[1, 1]*(f^2 + r^2)))^-1))
+println(@sprintf(" z[2] - z[1] ~ %1.2f m", H0*(σ[2] - σ[1])))

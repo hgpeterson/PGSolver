@@ -3,12 +3,8 @@
 # finite differences, terrain-following coordinates, and taking advantage of 
 # a 2D geometry.
 ################################################################################
-using SparseArrays, PyPlot, LinearAlgebra, SpecialFunctions
+using SparseArrays, LinearAlgebra, SpecialFunctions
 
-close("all")
-plt.style.use("~/presentation_plots.mplstyle")
-
-include("setParams.jl")
 include("myJuliaLib.jl")
 include("terrainFollowing.jl")
 
@@ -131,11 +127,8 @@ function postProcess(sol)
     # compute uξ = dσ(chi)/H
     uξ = σDerivativeTF(chi)./H.(x)
 
-    # compute uη = int_-1^0 f*chi/nu dσ*H
-    uη = zeros(nξ, nσ)
-    for i=1:nξ
-        uη[i, :] = cumtrapz(f*chi[i, :]./(Pr*κ[i, :]) .- U, σ)*H(ξ[i])
-    end
+    # compute uη = -f*uξ/r
+    uη = -f*uξ/r
 
     # compute uσ = -dξ(chi)/H
     uσ = -ξDerivativeTF(chi)./H.(x)
@@ -167,7 +160,7 @@ end
 Apply the 1D solution to the Rayleigh drag problem pointwise over the domain.
 See CF18 for details.
 """
-function pointwise1D(t, inversionLHS)
+function pointwise1D(t)
     # inverse boundary layer thickness
     q = @. sqrt(r*N^2*Hx(x)^2/(κ*(f^2 + r^2)))
 
@@ -175,23 +168,6 @@ function pointwise1D(t, inversionLHS)
     z1D = @. z + H(x)
     b = @. N^2/sqrt(1 + Hx(x)^2)/q*(exp(-q*z1D) - 0.5*(exp(-q*z1D)*erfc(q*sqrt(κ*t) - z1D/2/sqrt(κ*t)) + exp(q*z1D)*erfc(q*sqrt(κ*t) + z1D/2/sqrt(κ*t))))
 
-    # invert for flow
-    chi, uξ, uη, uσ, U = invert(b, inversionLHS)
-
-    return b, chi, uξ, uη, uσ, U
+    #TODO IN ORDER TO INVERT FOR FLOW, NEED ROTATED INVERSION EQTN
+    return b
 end
-
-
-#= ### example: show 1D solution =# 
-#= inversionLHS = lu(getInversionLHS()) =#
-
-#= ax = profilePlotInit() =#
-#= iξ = 1 =#
-
-#= for t=500*(1:5) =#
-#=     b, chi, uξ, uη, uσ, U = pointwise1D(t*86400, inversionLHS) =#
-#=     #1= plotCurrentState(t*86400, chi, uξ, uη, uσ, b, 999) =1# =#
-#=     profilePlot(ax, uξ, uη, uσ, b, iξ, t) =#
-#= end =#
-#= ax[1, 1].legend() =#
-#= savefig("profiles1d.png") =#
