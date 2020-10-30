@@ -133,7 +133,7 @@ function evolve(nSteps)
     nStepsInvert = 1
     nStepsPlot = 100
     nStepsSave = 1000
-    adaptiveTimestep = true
+    adaptiveTimestep = false
 
     # for flattening for matrix mult
     umap = reshape(1:nPts, nξ, nσ)    
@@ -189,9 +189,9 @@ function evolve(nSteps)
         evolutionRHS = diffRHS + advRHS
         #= evolutionRHS = diffRHS =# 
 
-        # no flux boundaries
+        # boundary fluxes
         evolutionRHS[bottomBdy] .= -N^2
-        evolutionRHS[topBdy] .= -N^2
+        evolutionRHS[topBdy] .= 0
 
         # solve
         bVec = evolutionLHS\evolutionRHS

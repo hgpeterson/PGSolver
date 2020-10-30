@@ -114,10 +114,12 @@ function profilePlot(datafiles, iξ)
 
         # invert buoyancy for flow
         chi, uξ, uη, uσ, U = invert(b, inversionLHS)
-        b1D = pointwise1D(t)
 
         # convert to physical coordinates 
         u, v, w = transformFromTF(uξ, uη, uσ)
+
+        # 1D sol
+        b1D, u1D, v1D, w1D = pointwise1D(t)
 
         # for stratification
         bz = zDerivativeTF(b)
@@ -126,16 +128,22 @@ function profilePlot(datafiles, iξ)
         Bz1D = N^2*cosθ + bz1D
 
         # plot
-        ax[1, 1].plot(u[iξ, :], z[iξ, :], c=colors[i, :], label=string("Day ", Int64(round(t/86400))))
-        ax[1, 2].plot(v[iξ, :], z[iξ, :], c=colors[i, :])
-        ax[2, 1].plot(w[iξ, :],    z[iξ, :], c=colors[i, :])
-        ax[2, 2].plot(Bz[iξ, :],   z[iξ, :], c=colors[i, :])
-        ax[2, 2].plot(Bz1D[iξ, :], z[iξ, :], "k:")
+        ax[1, 1].plot(u[iξ, :],  z[iξ, :], c=colors[i, :], label=string("Day ", Int64(round(t/86400))))
+        ax[1, 2].plot(v[iξ, :],  z[iξ, :], c=colors[i, :])
+        ax[2, 1].plot(w[iξ, :],  z[iξ, :], c=colors[i, :])
+        ax[2, 2].plot(Bz[iξ, :], z[iξ, :], c=colors[i, :])
+        ax[1, 1].plot(u1D[iξ, :],  z[iξ, :], c=colors[i, :], ls=":") 
+        ax[1, 2].plot(v1D[iξ, :],  z[iξ, :], c=colors[i, :], ls=":")
+        ax[2, 1].plot(w1D[iξ, :],  z[iξ, :], c=colors[i, :], ls=":")
+        ax[2, 2].plot(Bz1D[iξ, :], z[iξ, :], c=colors[i, :], ls=":")
     end
 
     ax[1, 1].legend()
+    #= for a in ax =#
+    #=     a.set_ylim([-2000, -1500]) =#
+    #= end =#
 
-    savefig("profiles.png")
+    savefig("profiles.png", dpi=500)
 end
 
 """

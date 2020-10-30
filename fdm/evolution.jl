@@ -181,16 +181,13 @@ function evolve(nSteps)
 
         # explicit timestep for advection
         advRHS = explicitRHS(Δt, bVec, fAdvRHS)
-        #= println(maximum(abs.(advRHS))) =#
-        #= bVec += advRHS =#
 
         # sum the two
         evolutionRHS = diffRHS + advRHS
-        #= evolutionRHS = diffRHS =# 
 
-        # no flux boundaries
+        # boundary fluxes
         evolutionRHS[bottomBdy] .= -N^2
-        evolutionRHS[topBdy] .= -N^2
+        evolutionRHS[topBdy] .= 0
 
         # solve
         bVec = evolutionLHS\evolutionRHS

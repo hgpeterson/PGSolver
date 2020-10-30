@@ -102,9 +102,12 @@ function profilePlot(datafiles, iξ)
     # left-hand side for inversion equations
     inversionLHS = lu(getInversionLHS())
 
+    # color map
+    colors = pl.cm.viridis(range(1, 0, length=5))
+
     # plot data from `datafiles
-    for bfile in datafiles
-        file = h5open(bfile, "r")
+    for i=1:size(datafiles, 1)
+        file = h5open(datafiles[i], "r")
         b = read(file, "b")
         t = read(file, "t")
         close(file)
@@ -115,14 +118,18 @@ function profilePlot(datafiles, iξ)
         # convert to physical coordinates 
         u, v, w = transformFromTF(uξ, uη, uσ)
 
-        # for stratification
-        bz = zDerivativeTF(b)
+        # stratification
+        Bz = N^2 .+ zDerivativeTF(b)
+
+        # colors and labels
+        label = string("Day ", Int64(round(t/86400)))
+        c = colors[i, :]
 
         # plot
-        ax[1, 1].plot(u[iξ, :], z[iξ, :], label=string("Day ", Int64(round(t/86400))))
-        ax[1, 2].plot(v[iξ, :], z[iξ, :])
-        ax[2, 1].plot(w[iξ, :], z[iξ, :])
-        ax[2, 2].plot(N^2 .+ bz[iξ, :], z[iξ, :])
+        ax[1, 1].plot(u[iξ, :],  z[iξ, :], c=c, label=label)
+        ax[1, 2].plot(v[iξ, :],  z[iξ, :], c=c)
+        ax[2, 1].plot(w[iξ, :],  z[iξ, :], c=c)
+        ax[2, 2].plot(Bz[iξ, :], z[iξ, :], c=c)
     end
 
     ax[1, 1].legend()
@@ -164,6 +171,9 @@ function profilePlot1DAdjusted(datafiles, iξ)
     # left-hand side for inversion equations
     inversionLHS = lu(getInversionLHS1DAdjusted())
 
+    # color map
+    colors = pl.cm.viridis(range(1, 0, length=5))
+
     # plot data from `datafiles`
     for bfile in datafiles
         file = h5open(bfile, "r")
@@ -177,14 +187,18 @@ function profilePlot1DAdjusted(datafiles, iξ)
         # convert to physical coordinates 
         u, v, w = transformFromTF(uξ, uη, uσ)
 
-        # for stratification
-        bz = zDerivativeTF(b)
+        # stratification
+        Bz = N^2 .+ zDerivativeTF(b)
+
+        # colors and labels
+        label = string("Day ", Int64(round(t/86400)))
+        c = colors[i, :]
 
         # plot
-        ax[1, 1].plot(u[iξ, :], z[iξ, :], label=string("Day ", Int64(round(t/86400))))
-        ax[1, 2].plot(v[iξ, :], z[iξ, :])
-        ax[2, 1].plot(w[iξ, :], z[iξ, :])
-        ax[2, 2].plot(N^2 .+ bz[iξ, :], z[iξ, :])
+        ax[1, 1].plot(u[iξ, :],  z[iξ, :], c=c, label=label)
+        ax[1, 2].plot(v[iξ, :],  z[iξ, :], c=c)
+        ax[2, 1].plot(w[iξ, :],  z[iξ, :], c=c)
+        ax[2, 2].plot(Bz[iξ, :], z[iξ, :], c=c)
     end
 
     ax[1, 1].legend()

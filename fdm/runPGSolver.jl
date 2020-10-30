@@ -2,8 +2,8 @@ include("setParams.jl")
 include("plottingLib.jl")
 include("inversion.jl")
 include("evolution.jl")
-include("1dsolver.jl")
-#= include("1dsolverSingleColumn.jl") =#
+include("1DSolver.jl")
+#= include("1DSolverSingleColumn.jl") =#
 
 ################################################################################
 # manually set `b` if you want
@@ -75,12 +75,12 @@ include("1dsolver.jl")
 ################################################################################
 
 #= b = evolve(500) =#
-#= profilePlot(["b1000.h5", "b2000.h5", "b3000.h5", "b4000.h5", "b5000.h5"], 1) =#
+profilePlot(["b1000.h5", "b2000.h5", "b3000.h5", "b4000.h5", "b5000.h5"], 1)
 
 #= b = evolve1DAdjusted(500) =#
 #= profilePlot1DAdjusted(["b1000.h5", "b2000.h5", "b3000.h5", "b4000.h5", "b5000.h5"], 1) =#
 
-sol = evolve1D(40000)
+#= sol = evolve1D(40000) =#
 #= sol = steadyState1D() =#
 #= profilePlot1D(["1dsol1000.h5", "1dsol2000.h5"], 1) =#
 

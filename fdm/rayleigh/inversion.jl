@@ -155,7 +155,7 @@ function invert(b, inversionLHS)
 end
 
 """
-    b, chi, uξ, uη, uσ, U = pointwise1D(t, inversionLHS)
+    b, u, v, w = pointwise1D(t, inversionLHS)
 
 Apply the 1D solution to the Rayleigh drag problem pointwise over the domain.
 See CF18 for details.
@@ -165,9 +165,18 @@ function pointwise1D(t)
     q = @. sqrt(r*N^2*Hx(x)^2/(κ*(f^2 + r^2)))
 
     # time dependent analytical buoyancy solution (only works for constant κ)
-    z1D = @. z + H(x)
-    b = @. N^2/sqrt(1 + Hx(x)^2)/q*(exp(-q*z1D) - 0.5*(exp(-q*z1D)*erfc(q*sqrt(κ*t) - z1D/2/sqrt(κ*t)) + exp(q*z1D)*erfc(q*sqrt(κ*t) + z1D/2/sqrt(κ*t))))
+    ẑ = @. (z + H(x))/cosθ # NOTE THE COSINE HERE TO FIX b AND v (see notes)
+    b̂ = @. N^2*cosθ/q*(exp(-q*ẑ) - 0.5*(exp(-q*ẑ)*erfc(q*sqrt(κ*t) - ẑ/2/sqrt(κ*t)) + exp(q*ẑ)*erfc(q*sqrt(κ*t) + ẑ/2/sqrt(κ*t))))
 
-    #TODO IN ORDER TO INVERT FOR FLOW, NEED ROTATED INVERSION EQTN
-    return b
+    # invert for flow using rotated 1D equations
+    û = @. b̂*sinθ/((f^2 + r^2)*cosθ^2/r)
+    v̂ = @. -f*û*cosθ/r
+
+    # rotate
+    b = b̂
+    u = @. û*cosθ
+    v = v̂
+    w = @. û*sinθ
+
+    return b, u, v, w
 end
