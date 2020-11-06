@@ -69,6 +69,105 @@ function ridgePlot(field, b, titleString, cbarLabel; vext=nothing, cmap="RdBu_r"
 end
 
 """
+    ax = ridgePlotNoIsopycnals(field, titleString, cbarLabel; vext)
+
+Create 2D plot of `field` without isopycnals.
+Set the title to `titleString` and colorbar label to `cbarLabel`. Return the axis 
+handle `ax`.
+
+Optional: set the vmin/vmax manually with vext.
+"""
+function ridgePlotNoIsopycnals(field, titleString, cbarLabel; vext=nothing, cmap="RdBu_r")
+    fig, ax = subplots(1)
+
+    # set min and max
+    if vext == nothing
+        vmax = maximum(abs.(field))
+        vmin = -vmax
+        extend = "neither"
+    else
+        vmax = vext
+        vmin = -vext
+        extend = "both"
+    end
+
+    # regular min and max for viridis
+    if cmap == "viridis"
+        vmin = minimum(field)
+        vmax = maximum(field)
+        extend = "neither"
+    end
+
+    # 2D plot
+    img = ax.pcolormesh(x/1000, z, field, cmap=cmap, vmin=vmin, vmax=vmax, rasterized=true)
+    cb = colorbar(img, ax=ax, label=cbarLabel, extend=extend)
+    cb.ax.ticklabel_format(style="sci", scilimits=(-3, 3))
+
+    # ridge shading
+    ax.fill_between(x[:, 1]/1000, z[:, 1], minimum(z), color="k", alpha=0.3)
+
+    # labels
+    ax.set_title(titleString)
+    ax.set_xlabel(L"$x$ (km)")
+    ax.set_ylabel(L"$z$ (m)")
+
+    tight_layout()
+    
+    return ax
+end
+
+"""
+    ax = ridgePlot2Fields(field1, field2, titleString, cbarLabel; vext)
+
+Create 2D plot of `field1` and `field2`.
+Set the title to `titleString` and colorbar label to `cbarLabel`. Return the axis 
+handle `ax`.
+
+Optional: set the vmin/vmax manually with vext.
+"""
+function ridgePlot2Fields(field1, field2, titleString, cbarLabel; vext=nothing, cmap="RdBu_r")
+    fig, ax = subplots(1)
+
+    # set min and max
+    if vext == nothing
+        vmax = maximum(abs.(field1))
+        vmin = -vmax
+        extend = "neither"
+    else
+        vmax = vext
+        vmin = -vext
+        extend = "both"
+    end
+
+    # regular min and max for viridis
+    if cmap == "viridis"
+        vmin = minimum(field1)
+        vmax = maximum(field1)
+        extend = "neither"
+    end
+
+    # 2D plot
+    img = ax.pcolormesh(x/1000, z, field1, cmap=cmap, vmin=vmin, vmax=vmax, rasterized=true)
+    cb = colorbar(img, ax=ax, label=cbarLabel, extend=extend)
+    cb.ax.ticklabel_format(style="sci", scilimits=(-3, 3))
+
+    # contours
+    ax.contour(x/1000, z, field2, levels=10, colors="k", alpha=0.3, linestyles="-")
+
+    # ridge shading
+    ax.fill_between(x[:, 1]/1000, z[:, 1], minimum(z), color="k", alpha=0.3)
+
+    # labels
+    ax.set_title(titleString)
+    ax.set_xlabel(L"$x$ (km)")
+    ax.set_ylabel(L"$z$ (m)")
+
+    tight_layout()
+    
+    return ax
+end
+
+"""
     profilePlot(datafiles, iξ)
 
 Plot profiles of b, u, v, w from HDF5 snapshot files of buoyancy in the `datafiles` list
