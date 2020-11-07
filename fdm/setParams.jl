@@ -1,9 +1,7 @@
-using Printf
-
 # parameters (as in RC20)
-L = 1e6
-H0 = 1e3
-Pr = 1e2
+L = 2e6
+H0 = 2e3
+Pr = 1e0
 f = -5.5e-5
 N = 1e-3
 
@@ -40,8 +38,8 @@ cosθ = @. 1/sqrt(1 + Hx(ξξ)^2)
 κ0 = 6e-5
 κ1 = 2e-3
 h = 200
-κ = κ1*ones(nξ, nσ)
-#= κ = @. κ0 + κ1*exp(-(z + H(x))/h) =#
+#= κ = κ1*ones(nξ, nσ) =#
+κ = @. κ0 + κ1*exp(-(z + H(x))/h)
 
 # print properties
 println("\nPGSolver with Parameters\n")

@@ -1,9 +1,15 @@
+using PyPlot, PyCall, Printf, SparseArrays, LinearAlgebra, HDF5
+
+plt.style.use("~/paper_plots.mplstyle")
+close("all")
+pygui(false)
+
+include("../myJuliaLib.jl")
 include("setParams.jl")
+include("terrainFollowing.jl")
 include("plottingLib.jl")
 include("inversion.jl")
 include("evolution.jl")
-include("1DSolver.jl")
-#= include("1DSolverSingleColumn.jl") =#
 
 ################################################################################
 # manually set `b` if you want

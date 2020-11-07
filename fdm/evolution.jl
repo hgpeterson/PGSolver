@@ -1,7 +1,3 @@
-using SparseArrays, LinearAlgebra, Printf, HDF5
-
-include("myJuliaLib.jl")
-
 """
     matrices = getEvolutionMatrices()
 
