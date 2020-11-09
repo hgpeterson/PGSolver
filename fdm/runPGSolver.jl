@@ -80,8 +80,11 @@ include("evolution.jl")
 # run evolution integrations
 ################################################################################
 
-b = evolve(5000)
-profilePlot(["b1000.h5", "b2000.h5", "b3000.h5", "b4000.h5", "b5000.h5"], 1)
+#= b = evolve(500; ξVariation=false) =#
+
+path = "/home/hpeter/Documents/ResearchCallies/rapid_adjustment/sims/sim001/"
+dfiles = string.(path, ["b1000.h5", "b2000.h5", "b3000.h5", "b4000.h5", "b5000.h5"])
+profilePlot(dfiles, 1)
 
 #= b = evolve1DAdjusted(500) =#
 #= profilePlot1DAdjusted(["b1000.h5", "b2000.h5", "b3000.h5", "b4000.h5", "b5000.h5"], 1) =#

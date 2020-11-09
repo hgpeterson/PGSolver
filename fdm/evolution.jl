@@ -96,15 +96,15 @@ end
 
 Solve full nonlinear equation for `b` for `nSteps` time steps.
 """
-function evolve(nSteps)
+function evolve(nSteps; ξVariation=true)
     # grid points
     nPts = nξ*nσ
 
     # timestep
-    Δt = 86400
+    Δt = 10*86400
     nStepsInvert = 1
-    nStepsPlot = 100
-    nStepsSave = 1000
+    nStepsPlot = 10
+    nStepsSave = 100
     adaptiveTimestep = false
 
     # for flattening for matrix mult
@@ -137,8 +137,6 @@ function evolve(nSteps)
 
     # invert initial condition
     chi, uξ, uη, uσ, U = invert(b, inversionLHS)
-    uξVec = reshape(uξ, nPts, 1)
-    uσVec = reshape(uσ, nPts, 1)
     chiEkman = getChiEkman(b)
     
     # plot initial state of all zeros and no flow
@@ -149,6 +147,9 @@ function evolve(nSteps)
     bVec = reshape(b, nPts, 1)
     uξVec = reshape(uξ, nPts, 1)
     uσVec = reshape(uσ, nPts, 1)
+        
+    # define function to compute advection RHS (to be altered each timestep)
+    fAdvRHS(bVec, t) = 0
 
     # main loop
     for i=1:nSteps
@@ -158,9 +159,12 @@ function evolve(nSteps)
         # implicit euler diffusion
         diffRHS = bVec + diffVec*Δt
 
-        # function to compute advection RHS
-        # (note the parentheses here to allow for sparse matrices to work first)
-        fAdvRHS(bVec, t) = -(uξVec.*(ξDerivativeMat*bVec) + uσVec.*(σDerivativeMat*bVec) + N^2*uξVec.*HxVec.*σσVec + N^2*uσVec.*HVec)
+        # RHS function (note the parentheses here to allow for sparse matrices to work first)
+        if ξVariation
+            fAdvRHS(bVec, t) = -(uξVec.*(ξDerivativeMat*bVec) + uσVec.*(σDerivativeMat*bVec) + N^2*uξVec.*HxVec.*σσVec + N^2*uσVec.*HVec)
+        else
+            fAdvRHS(bVec, t) = -(uσVec.*(σDerivativeMat*bVec) + N^2*uξVec.*HxVec.*σσVec + N^2*uσVec.*HVec)
+        end
 
         # explicit timestep for advection
         advRHS = RK4(t, Δt, bVec, fAdvRHS)
@@ -170,7 +174,7 @@ function evolve(nSteps)
 
         # boundary fluxes
         evolutionRHS[bottomBdy] .= -N^2
-        evolutionRHS[topBdy] .= -N^2
+        evolutionRHS[topBdy] .= 0
 
         # solve
         bVec = evolutionLHS\evolutionRHS
@@ -182,7 +186,7 @@ function evolve(nSteps)
             b = reshape(bVec, nξ, nσ)
 
             # invert buoyancy for flow
-            chi, uξ, uη, uσ, U = invert(b, inversionLHS)
+            chi, uξ, uη, uσ, U = invert(b, inversionLHS; ξVariation=ξVariation)
             uξVec = reshape(uξ, nPts, 1)
             uσVec = reshape(uσ, nPts, 1)
             if adaptiveTimestep

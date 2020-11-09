@@ -1,13 +1,3 @@
-################################################################################
-# Functions used to compute the flow field given a buoyancy perturbation using
-# finite differences, terrain-following coordinates, and taking advantage of 
-# a 2D geometry.
-################################################################################
-using SparseArrays, LinearAlgebra, SpecialFunctions
-
-include("myJuliaLib.jl")
-include("terrainFollowing.jl")
-
 """
     LHS = getInversionLHS()
 
@@ -67,33 +57,23 @@ end
 
 Setup right hand side of linear system for problem.
 """
-function getInversionRHS(b)
+function getInversionRHS(b; ξVariation=true)
     nPts = nξ*nσ
-    iU = nPts + 1 # add equation for vertically integrated zonal flow
-
     umap = reshape(1:nPts, nξ, nσ)    
-    A = Tuple{Int64,Int64,Float64}[]  
-    rhs = zeros(nPts + 1)                      
 
-    # Main loop, insert stencil in matrix for each node point
-    for i=1:nξ
-        # Boundary conditions: periodic in ξ
-        iL = mod1(i-1, nξ)
-        iR = mod1(i+1, nξ)
-
-        # Interior nodes
-        for j=2:nσ-1
-            row = umap[i, j] 
-
-            # dσ stencil
-            fd_σ = mkfdstencil(σ[j-1:j+1], σ[j], 1)
-            
-            # eqtn: (f^2 + r^2)*dσσ(chi)/r/H^2 = -dξ(b) + dx(H)*σ*dσ(b)/H
-            rhs[row] = -(b[iR, j] - b[iL, j])/(2*dξ) + Hx(ξ[i])*σ[j]*sum(fd_σ.*b[i, j-1:j+1])/H(ξ[i])
-        end
+    # eqtn: (f^2 + r^2)*dσσ(chi)/r/H^2 = -dξ(b) + dx(H)*σ*dσ(b)/H
+    if ξVariation
+        rhs = -xDerivativeTF(b)
+    else
+        rhs = Hx.(ξξ).*σσ.*σDerivativeTF(b)./H.(ξξ)
     end
+    rhs[umap[:, [1, nσ]]] .= 0 # boundary conditions require zeros on the rhs
 
-    return rhs
+    # return as vector
+    rhsVec = zeros(nPts + 1)                      
+    rhsVec[umap[:, :]] = reshape(rhs, nPts, 1)
+
+    return rhsVec
 end
 
 """
@@ -141,9 +121,9 @@ end
 
 Wrapper function that inverts for flow given buoyancy perturbation `b`.
 """
-function invert(b, inversionLHS)
+function invert(b, inversionLHS; ξVariation=true)
     # compute RHS
-    inversionRHS = getInversionRHS(b)
+    inversionRHS = getInversionRHS(b; ξVariation=ξVariation)
 
     # solve
     sol = inversionLHS\inversionRHS
@@ -166,16 +146,14 @@ function pointwise1D(t)
 
     # time dependent analytical buoyancy solution (only works for constant κ)
     ẑ = @. (z + H(x))/cosθ # NOTE THE COSINE HERE TO FIX b AND v (see notes)
-    b̂ = @. N^2*cosθ/q*(exp(-q*ẑ) - 0.5*(exp(-q*ẑ)*erfc(q*sqrt(κ*t) - ẑ/2/sqrt(κ*t)) + exp(q*ẑ)*erfc(q*sqrt(κ*t) + ẑ/2/sqrt(κ*t))))
+    b = @. N^2*cosθ/q*(exp(-q*ẑ) - 0.5*(exp(-q*ẑ)*erfc(q*sqrt(κ*t) - ẑ/2/sqrt(κ*t)) + exp(q*ẑ)*erfc(q*sqrt(κ*t) + ẑ/2/sqrt(κ*t))))
 
     # invert for flow using rotated 1D equations
     û = @. b̂*sinθ/((f^2 + r^2)*cosθ^2/r)
-    v̂ = @. -f*û*cosθ/r
+    v = @. -f*û*cosθ/r
 
     # rotate
-    b = b̂
     u = @. û*cosθ
-    v = v̂
     w = @. û*sinθ
 
     return b, u, v, w

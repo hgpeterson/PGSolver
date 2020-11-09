@@ -115,9 +115,6 @@ function getInversionLHS()
     # Create CSC sparse matrix from matrix elements
     A = sparse((x->x[1]).(A), (x->x[2]).(A), (x->x[3]).(A), nPts + 1, nPts + 1)
 
-    #= println("rank(A)  = ", rank(A)) =#
-    #= println("nPts + 1 = ", nPts + 1) =#
-
     return A
 end
 
@@ -126,45 +123,23 @@ end
 
 Setup right hand side of linear system for problem.
 """
-function getInversionRHS(b)
+function getInversionRHS(b; ξVariation=true)
     nPts = nξ*nσ
-    iU = nPts + 1 # add equation for vertically integrated zonal flow
-
     umap = reshape(1:nPts, nξ, nσ)    
-    A = Tuple{Int64,Int64,Float64}[]  
-    rhs = zeros(nPts + 1)                      
 
-    # Main loop, insert stencil in matrix for each node point
-    for i=1:nξ
-        # Boundary conditions: periodic in ξ
-        iL = mod1(i-1, nξ)
-        iR = mod1(i+1, nξ)
-
-        # Lower boundary conditions 
-        # b.c. 1: dσ(chi) = 0
-        # b.c. 2: chi = 0 
-
-        # Upper boundary conditions
-        # b.c. 1: dσσ(chi) = 0 (or -stress at top)
-        #= rhs[umap[1, i, nσ]] = -0.1 # some wind stress at the top =#
-        # b.c. 2: chi - U = 0
-
-        # Interior nodes
-        for j=3:nσ-2
-            row = umap[i, j] 
-
-            # dσ stencil
-            fd_σ = mkfdstencil(σ[j-1:j+1], σ[j], 1)
-            
-            # eqtn: dσσ(nu*dσσ(chi))/H^4 + f^2*chi/nu + f*U = dξ(b) - dx(H)*σ*dσ(b)/H
-            rhs[row] = (b[iR, j] - b[iL, j])/(2*dξ) - Hx(ξ[i])*σ[j]*sum(fd_σ.*b[i, j-1:j+1])/H(ξ[i])
-        end
+    # eqtn: dσσ(nu*dσσ(chi))/H^4 + f^2*chi/nu + f*U = dξ(b) - dx(H)*σ*dσ(b)/H
+    if ξVariation
+        rhs = xDerivativeTF(b)
+    else
+        rhs = -Hx.(ξξ).*σσ.*σDerivativeTF(b)./H.(ξξ)
     end
+    rhs[umap[:, [1, 2, nσ-2, nσ]]] .= 0 # boundary conditions require zeros on the rhs
 
-    # zonal mean / integral equation for bottom stress
-    #   < int_-1^0 (f^2*chi/nu + U) dσ + dσ(nu*dσσ(chi))/H^3 > = 0
-    
-    return rhs
+    # return as vector
+    rhsVec = zeros(nPts + 1)                      
+    rhsVec[umap[:, :]] = reshape(rhs, nPts, 1)
+
+    return rhsVec
 end
 
 """
@@ -200,9 +175,9 @@ end
 
 Wrapper function that inverts for flow given buoyancy perturbation `b`.
 """
-function invert(b, inversionLHS)
+function invert(b, inversionLHS; ξVariation=true)
     # compute RHS
-    inversionRHS = getInversionRHS(b)
+    inversionRHS = getInversionRHS(b; ξVariation=ξVariation)
 
     # solve
     sol = inversionLHS\inversionRHS

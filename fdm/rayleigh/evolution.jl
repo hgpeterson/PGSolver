@@ -1,9 +1,3 @@
-using SparseArrays, LinearAlgebra, Printf, HDF5
-
-include("myJuliaLib.jl")
-include("plottingLib.jl")
-include("inversion.jl")
-
 """
     matrices = getEvolutionMatrices()
 
@@ -81,28 +75,6 @@ function getEvolutionMatrices()
 end
 
 """
-    dy = explicitRHS(Δt, y, f)
-
-Compute `dy`, the change in `y` given a timestep of `Δt` and that `dt(y) = f(y)`.
-"""
-function explicitRHS(Δt, y, f)
-    #= # euler =#
-    #= return Δt*f(y) =#
-    #= # midpoint =#
-	#= f1 = f(y) =#
-    #= f2 = f(y + Δt*f1/2) =#
-	#= dy = Δt*f2 =#
-    #= return dy =#
-    # RK4
-	f1 = f(y)
-    f2 = f(y + Δt*f1/2)
-    f3 = f(y + Δt*f2/2)
-    f4 = f(y + Δt*f3)
-	dy = Δt/6*(f1 + 2*f2 + 2*f3 + f4)
-    return dy
-end
-
-"""
     evolutionLHS = getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy)
 
 Generate the left-hand side matrix for the evolution problem of the form `I - diffmat*Δt`
@@ -124,7 +96,7 @@ end
 
 Solve full nonlinear equation for `b` for `nSteps` time steps.
 """
-function evolve(nSteps)
+function evolve(nSteps; ξVariation=true)
     # grid points
     nPts = nξ*nσ
 
@@ -149,17 +121,22 @@ function evolve(nSteps)
     # left-hand side for inversion equations
     inversionLHS = lu(getInversionLHS())
 
-    # vector of H values
+    # vectors of H, Hx, and σ values for the N^*w term
     HVec = reshape(H.(x), nPts, 1)
+    HxVec = reshape(Hx.(x), nPts, 1)
+    σσVec = reshape(σσ, nPts, 1)
 
     # initial condition
     t = 0
     b = zeros(nξ, nσ)
+    #= # load data =#
+    #= file = h5open("b.h5", "r") =#
+    #= b = read(file, "b") =#
+    #= t = read(file, "t") =#
+    #= close(file) =#
 
     # invert initial condition
     chi, uξ, uη, uσ, U = invert(b, inversionLHS)
-    uξVec = reshape(uξ, nPts, 1)
-    uσVec = reshape(uσ, nPts, 1)
     
     # plot initial state of all zeros and no flow
     iImg = 0
@@ -169,6 +146,9 @@ function evolve(nSteps)
     bVec = reshape(b, nPts, 1)
     uξVec = reshape(uξ, nPts, 1)
     uσVec = reshape(uσ, nPts, 1)
+        
+    # define function to compute advection RHS (to be altered each timestep)
+    fAdvRHS(bVec, t) = 0
 
     # main loop
     for i=1:nSteps
@@ -178,16 +158,18 @@ function evolve(nSteps)
         # implicit euler diffusion
         diffRHS = bVec + diffVec*Δt
 
-        # function to compute advection RHS
-        # (note the parentheses here to allow for sparse matrices to work first)
-        fAdvRHS(bVec) = -(uξVec.*(ξDerivativeMat*bVec) + uσVec.*(σDerivativeMat*bVec) + uσVec.*HVec*N^2)
-        
+        # RHS function (note the parentheses here to allow for sparse matrices to work first)
+        if ξVariation
+            fAdvRHS(bVec, t) = -(uξVec.*(ξDerivativeMat*bVec) + uσVec.*(σDerivativeMat*bVec) + N^2*uξVec.*HxVec.*σσVec + N^2*uσVec.*HVec)
+        else
+            fAdvRHS(bVec, t) = -(uσVec.*(σDerivativeMat*bVec) + N^2*uξVec.*HxVec.*σσVec + N^2*uσVec.*HVec)
+        end
+
         # explicit timestep for advection
-        advRHS = explicitRHS(Δt, bVec, fAdvRHS)
+        advRHS = RK4(t, Δt, bVec, fAdvRHS)
 
         # sum the two
         evolutionRHS = diffRHS + advRHS
-        #= evolutionRHS = diffRHS =# 
 
         # boundary fluxes
         evolutionRHS[bottomBdy] .= -N^2
@@ -203,23 +185,22 @@ function evolve(nSteps)
             b = reshape(bVec, nξ, nσ)
 
             # invert buoyancy for flow
-            chi, uξ, uη, uσ, U = invert(b, inversionLHS)
+            chi, uξ, uη, uσ, U = invert(b, inversionLHS; ξVariation=ξVariation)
             uξVec = reshape(uξ, nPts, 1)
             uσVec = reshape(uσ, nPts, 1)
-
             if adaptiveTimestep
                 uξCFL = minimum(abs.(dξ./uξ))
                 uσCFL = minimum(abs.(dσ./uσ))
                 println(@sprintf("CFL uξ: %.2f days", uξCFL/86400))
                 println(@sprintf("CFL uσ: %.2f days", uσCFL/86400))
-                #= if 0.01*minimum([uξCFL, uσCFL]) < Δt && adaptiveTimestep =#
+                #= if 0.5*minimum([uξCFL, uσCFL]) < Δt =#
                 #=     # need to have smaller step size by CFL =#
-                #=     Δt = 0.01*minimum([uξCFL, uσCFL]) =#
+                #=     Δt = 0.5*minimum([uξCFL, uσCFL]) =#
                 #=     println(@sprintf("Decreasing timestep to %.2f days", Δt/86400)) =#
                 #=     evolutionLHS = lu(getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy)) =#
-                #= elseif 0.01*minimum([uξCFL, uσCFL]) > 10*Δt && Δt < 10*86400 && adaptiveTimestep =#
+                #= elseif 0.5*minimum([uξCFL, uσCFL]) > 2*Δt =#
                 #=     # could have much larger step size by CFL =#
-                #=     Δt = 0.01*minimum([uξCFL, uσCFL]) =#
+                #=     Δt = minimum([0.5*minimum([uξCFL, uσCFL]), 1*86400]) =#
                 #=     println(@sprintf("Increasing timestep to %.2f days", Δt/86400)) =#
                 #=     evolutionLHS = lu(getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy)) =#
                 #= end =#
@@ -232,7 +213,9 @@ function evolve(nSteps)
         end
         if i % nStepsSave == 0
             # save data
-            file = h5open(@sprintf("b%d.h5", tDays), "w")
+            savefile = @sprintf("b%d.h5", tDays)
+            println("saving to ", savefile)
+            file = h5open(savefile, "w")
             write(file, "b", b)
             write(file, "t", t)
             close(file)

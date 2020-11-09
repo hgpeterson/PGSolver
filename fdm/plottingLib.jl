@@ -3,6 +3,7 @@
 ################################################################################
 
 pl = pyimport("matplotlib.pylab")
+inset_locator = pyimport("mpl_toolkits.axes_grid1.inset_locator")
 
 """
     ax = ridgePlot(field, b, titleString, cbarLabel; vext)
@@ -47,10 +48,10 @@ function ridgePlot(field, b, titleString, cbarLabel; vext=nothing, cmap="RdBu_r"
     lowerLevel = N^2*minimum(z)
     upperLevel = 0
     levels = lowerLevel:(upperLevel - lowerLevel)/(nLevels - 1):upperLevel
-    ax.contour(x/1000, z, B, levels=levels, colors="k", alpha=0.3, linestyles="-")
+    ax.contour(x/1000, z, B, levels=levels, colors="k", alpha=0.3, linestyles="-", linewidths=0.5)
 
     # ridge shading
-    ax.fill_between(x[:, 1]/1000, z[:, 1], minimum(z), color="k", alpha=0.3)
+    ax.fill_between(x[:, 1]/1000, z[:, 1], minimum(z), color="k", alpha=0.3, lw=0.0)
 
     # labels
     ax.set_title(titleString)
@@ -169,34 +170,46 @@ at ξ = ξ[iξ].
 """
 function profilePlot(datafiles, iξ)
     # init plot
-    fig, ax = subplots(2, 2, figsize=(6.5, 6.5/1.62), sharey=true)
+    fig, ax = subplots(2, 2, figsize=(6.5, 6.5/1.62))
 
-    ax[1, 1].set_xlabel(L"$u$ (m s$^{-1}$)")
+    # insets
+    axins21 = inset_locator.inset_axes(ax[2, 1], width="40%", height="40%")
+    axins22 = inset_locator.inset_axes(ax[2, 2], width="40%", height="40%")
+
+    ax[1, 1].set_xlabel(L"$v$ (m s$^{-1}$)")
     ax[1, 1].set_ylabel(L"$z$ (m)")
-    ax[1, 1].set_title("cross-ridge velocity")
+    ax[1, 1].set_title("along-ridge velocity")
 
-    ax[1, 2].set_xlabel(L"$v$ (m s$^{-1}$)")
-    ax[1, 2].set_title("along-ridge velocity")
+    ax[1, 2].set_xlabel(L"$B_z$ (s$^{-2}$)")
+    ax[1, 2].set_ylabel(L"$z$ (m)")
+    ax[1, 2].set_title("stratification")
 
-    ax[2, 1].set_xlabel(L"$w$ (m s$^{-1}$)")
+    ax[2, 1].set_xlabel(L"$u$ (m s$^{-1}$)")
     ax[2, 1].set_ylabel(L"$z$ (m)")
-    ax[2, 1].set_title("vertical velocity")
+    ax[2, 1].set_title("cross-ridge velocity")
 
-    ax[2, 2].set_xlabel(L"$B_z$ (s$^{-2}$)")
-    ax[2, 2].set_title("stratification")
+    ax[2, 2].set_xlabel(L"$w$ (m s$^{-1}$)")
+    ax[2, 2].set_ylabel(L"$z$ (m)")
+    ax[2, 2].set_title("vertical velocity")
 
-    tight_layout()
+    #= tight_layout() =#
+    subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, wspace=0.3, hspace=0.6)
 
-    ax[1, 1].ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
-    ax[1, 2].ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
-    ax[2, 1].ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
-    ax[2, 2].ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
+    for a in ax
+        a.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
+    end
+    axins21.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
+    axins22.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
 
     # left-hand side for inversion equations
     inversionLHS = lu(getInversionLHS())
 
     # color map
     colors = pl.cm.viridis(range(1, 0, length=5))
+
+    # zoomed z
+    ax[2, 1].set_ylim([z[iξ, 1], z[iξ, 1] + H0/10])
+    ax[2, 2].set_ylim([z[iξ, 1], z[iξ, 1] + H0/10])
 
     # plot data from `datafiles
     for i=1:size(datafiles, 1)
@@ -219,15 +232,17 @@ function profilePlot(datafiles, iξ)
         c = colors[i, :]
 
         # plot
-        ax[1, 1].plot(u[iξ, :],  z[iξ, :], c=c, label=label)
-        ax[1, 2].plot(v[iξ, :],  z[iξ, :], c=c)
-        ax[2, 1].plot(w[iξ, :],  z[iξ, :], c=c)
-        ax[2, 2].plot(Bz[iξ, :], z[iξ, :], c=c)
+        ax[1, 1].plot(v[iξ, :],  z[iξ, :], c=c, label=label)
+        ax[1, 2].plot(Bz[iξ, :], z[iξ, :], c=c)
+        ax[2, 1].plot(u[iξ, :],  z[iξ, :], c=c)
+        axins21.plot(u[iξ, :],  z[iξ, :], c=c)
+        ax[2, 2].plot(w[iξ, :],  z[iξ, :], c=c)
+        axins22.plot(w[iξ, :],  z[iξ, :], c=c)
     end
 
     ax[1, 1].legend()
 
-    savefig("profiles.png")
+    savefig("profiles.png", bbox="inches")
 end
 
 #= """ =#

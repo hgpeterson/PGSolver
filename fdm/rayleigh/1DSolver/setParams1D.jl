@@ -4,7 +4,6 @@ H0 = 2e3
 Pr = 1e0
 f = -5.5e-5
 N = 1e-3
-# as in CF18
 β = 2e-11
 r = 0.1*β*L
 
@@ -14,39 +13,35 @@ H(x) = H0 - amp*sin(2*pi*x/L) # hill
 Hx(x) = -2*pi/L*amp*cos(2*pi*x/L)
 
 # number of grid points
-nξ = 2^8 + 1 
-nσ = 2^8
+nx = 2^8 + 1 
+nz = 2^8
 
-# domain in terrain-following (ξ, σ) space
-dξ = dx = L/nξ
-ξ = 0:dξ:(L - dξ)
-σ = @. -(cos(pi*(0:nσ-1)/(nσ-1)) + 1)/2 # chebyshev 
-ξξ = repeat(ξ, 1, nσ)
-σσ = repeat(σ', nξ, 1)
-dσ = zeros(nξ, nσ)
-dσ[:, 1:end-1] = σσ[:, 2:end] - σσ[:, 1:end-1]
-dσ[:, end] = dσ[:, end-1]
+# domain in physical (x, z) space
+dx = L/nx
+x = 0:dx:(L - dx)
+xx = repeat(x, 1, nz)
+σ = @. -(cos(pi*(0:nz-1)/(nz-1)) + 1)/2 # chebyshev 
+zz = repeat(σ', nx, 1).*repeat(H.(x), 1, nz)
 
-# domain in physical (x, z) space (2D arrays)
-x = repeat(ξ, 1, nσ)
-z = repeat(σ', nξ, 1).*repeat(H.(ξ), 1, nσ)
+# arrays of sin(θ) and cos(θ) 
+sinθ = @. -Hx(xx)/sqrt(1 + Hx(xx)^2)
+cosθ = @. 1/sqrt(1 + Hx(xx)^2) 
 
-# arrays of sin(θ) and cos(θ) for 1D solutions
-sinθ = @. -Hx(ξξ)/sqrt(1 + Hx(ξξ)^2)
-cosθ = @. 1/sqrt(1 + Hx(ξξ)^2) 
+# domain in locally rotated (x, ẑ) space
+ẑẑ = @. zz/cosθ
 
 # diffusivity
 κ0 = 6e-7
 κ1 = 2e-5
 h = 200
-κ = κ1*ones(nξ, nσ)
-#= κ = @. κ0 + κ1*exp(-(z + H(x))/h) =#
-    
+#= κ = κ1*ones(nx, nz) =#
+κ = @. κ0 + κ1*exp(-(ẑẑ + H(xx))/h)
+
 # print properties
 println("\nPGSolver with Parameters\n")
 
-println(@sprintf("nξ = %d", nξ))
-println(@sprintf("nσ = %d\n", nσ))
+println(@sprintf("nx = %d", nx))
+println(@sprintf("nz = %d\n", nz))
 
 println(@sprintf("L  = %d km", L/1000))
 println(@sprintf("H0 = %d m", H0))
@@ -60,4 +55,4 @@ println(@sprintf("κ1 = %1.1e m2 s-1", κ1))
 println(@sprintf("h  = %d m", h))
 
 println(@sprintf("\nBL thickness ~ %1.2f m", sqrt(r*N^2*Hx(x[1, 1])^2/(κ[1, 1]*(f^2 + r^2)))^-1))
-println(@sprintf(" z[2] - z[1] ~ %1.2f m", H0*(σ[2] - σ[1])))
+println(@sprintf(" ẑ[2] - ẑ[1] at x = 0 ~ %1.2f m", (ẑẑ[1, 2] - ẑẑ[1, 1])))
