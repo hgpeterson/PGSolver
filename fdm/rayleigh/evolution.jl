@@ -96,7 +96,7 @@ end
 
 Solve full nonlinear equation for `b` for `nSteps` time steps.
 """
-function evolve(nSteps; ξVariation=true)
+function evolve(nSteps)
     # grid points
     nPts = nξ*nσ
 
@@ -184,8 +184,12 @@ function evolve(nSteps; ξVariation=true)
             # reshape
             b = reshape(bVec, nξ, nσ)
 
+            # test 1D error
+            b1D, u1D, v1D, w1D = pointwise1D(t)
+            println(@sprintf("1D Max Error: %1.2e", maximum(abs.(b - b1D))))
+
             # invert buoyancy for flow
-            chi, uξ, uη, uσ, U = invert(b, inversionLHS; ξVariation=ξVariation)
+            chi, uξ, uη, uσ, U = invert(b, inversionLHS)
             uξVec = reshape(uξ, nPts, 1)
             uσVec = reshape(uσ, nPts, 1)
             if adaptiveTimestep

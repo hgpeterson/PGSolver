@@ -8,6 +8,14 @@ N = 1e-3
 β = 2e-11
 r = 0.1*β*L
 
+# turn on/off variations in ξ
+ξVariation = false
+#= ξVariation = true =#
+
+# set U = 0 or compute U at each time step?
+#= symmetry = false =#
+symmetry = true
+
 # topography
 amp =  0.4*H0
 H(x) = H0 - amp*sin(2*pi*x/L) # hill
@@ -58,6 +66,9 @@ println(@sprintf("r  = %1.1e s-1", r))
 println(@sprintf("κ0 = %1.1e m2 s-1", κ0))
 println(@sprintf("κ1 = %1.1e m2 s-1", κ1))
 println(@sprintf("h  = %d m", h))
+
+println("\nVariations in ξ: ", ξVariation)
+println("Symmetric: ", symmetry)
 
 println(@sprintf("\nBL thickness ~ %1.2f m", sqrt(r*N^2*Hx(x[1, 1])^2/(κ[1, 1]*(f^2 + r^2)))^-1))
 println(@sprintf(" z[2] - z[1] ~ %1.2f m", H0*(σ[2] - σ[1])))

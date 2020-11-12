@@ -125,8 +125,12 @@ function profilePlot(datafiles, iξ)
         # convert to physical coordinates 
         u, v, w = transformFromTF(uξ, uη, uσ)
 
+        # 1D sol
+        b1D, u1D, v1D, w1D = pointwise1D(t)
+
         # stratification
         Bz = N^2 .+ zDerivativeTF(b)
+        Bz1D = N^2*cosθ + zDerivativeTF(b1D)
 
         # colors and labels
         label = string("Day ", Int64(round(t/86400)))
@@ -139,6 +143,13 @@ function profilePlot(datafiles, iξ)
         axins21.plot(u[iξ, :],  z[iξ, :], c=c)
         ax[2, 2].plot(w[iξ, :],  z[iξ, :], c=c)
         axins22.plot(w[iξ, :],  z[iξ, :], c=c)
+
+        ax[1, 1].plot(v1D[iξ, :], z[iξ, :], c=c, ls=":")
+        ax[1, 2].plot(Bz1D[iξ, :],z[iξ, :], c=c, ls=":")
+        ax[2, 1].plot(u1D[iξ, :], z[iξ, :], c=c, ls=":")
+        axins21.plot(u1D[iξ, :],  z[iξ, :], c=c, ls=":")
+        ax[2, 2].plot(w1D[iξ, :], z[iξ, :], c=c, ls=":")
+        axins22.plot(w1D[iξ, :],  z[iξ, :], c=c, ls=":")
     end
 
     ax[1, 1].legend()
