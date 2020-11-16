@@ -71,36 +71,43 @@ at ξ = ξ[iξ].
 """
 function profilePlot(datafiles, iξ)
     # init plot
-    fig, ax = subplots(2, 2, figsize=(6.5, 6.5/1.62))
+    fig, ax = subplots(2, 3, figsize=(10, 6.5/1.62))
 
     # insets
+    axins11 = inset_locator.inset_axes(ax[1, 1], width="40%", height="40%", loc="upper center")
     axins21 = inset_locator.inset_axes(ax[2, 1], width="40%", height="40%")
-    axins22 = inset_locator.inset_axes(ax[2, 2], width="40%", height="40%")
 
-    ax[1, 1].set_xlabel(L"$v$ (m s$^{-1}$)")
+    ax[1, 1].set_xlabel(L"$B_z$ (s$^{-2}$)")
     ax[1, 1].set_ylabel(L"$z$ (m)")
-    ax[1, 1].set_title("along-ridge velocity")
+    ax[1, 1].set_title("stratification")
 
-    ax[1, 2].set_xlabel(L"$B_z$ (s$^{-2}$)")
+    ax[1, 2].set_xlabel(L"$\chi$ (m$^2$ s$^{-1}$)")
     ax[1, 2].set_ylabel(L"$z$ (m)")
-    ax[1, 2].set_title("stratification")
+    ax[1, 2].set_title("streamfunction")
+
+    ax[1, 3].set_xlabel(L"$b_x$ (s$^{-2}$)")
+    ax[1, 3].set_ylabel(L"$z$ (m)")
+    ax[1, 3].set_title("buoyancy gradient")
 
     ax[2, 1].set_xlabel(L"$u$ (m s$^{-1}$)")
     ax[2, 1].set_ylabel(L"$z$ (m)")
     ax[2, 1].set_title("cross-ridge velocity")
 
-    ax[2, 2].set_xlabel(L"$w$ (m s$^{-1}$)")
+    ax[2, 2].set_xlabel(L"$v$ (m s$^{-1}$)")
     ax[2, 2].set_ylabel(L"$z$ (m)")
-    ax[2, 2].set_title("vertical velocity")
+    ax[2, 2].set_title("along-ridge velocity")
 
-    #= tight_layout() =#
+    ax[2, 3].set_xlabel(L"$w$ (m s$^{-1}$)")
+    ax[2, 3].set_ylabel(L"$z$ (m)")
+    ax[2, 3].set_title("vertical velocity")
+
     subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.9, wspace=0.3, hspace=0.6)
 
     for a in ax
         a.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
     end
+    axins11.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
     axins21.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
-    axins22.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
 
     # left-hand side for inversion equations
     inversionLHS = lu(getInversionLHS())
@@ -109,8 +116,8 @@ function profilePlot(datafiles, iξ)
     colors = pl.cm.viridis(range(1, 0, length=5))
 
     # zoomed z
+    ax[1, 1].set_ylim([z[iξ, 1], z[iξ, 1] + H0/10])
     ax[2, 1].set_ylim([z[iξ, 1], z[iξ, 1] + H0/10])
-    ax[2, 2].set_ylim([z[iξ, 1], z[iξ, 1] + H0/10])
 
     # plot data from `datafiles
     for i=1:size(datafiles, 1)
@@ -132,27 +139,32 @@ function profilePlot(datafiles, iξ)
         Bz = N^2 .+ zDerivativeTF(b)
         Bz1D = N^2*cosθ + zDerivativeTF(b1D)
 
+        # gradient
+        bx = xDerivativeTF(b)
+
         # colors and labels
         label = string("Day ", Int64(round(t/86400)))
         c = colors[i, :]
 
         # plot
-        ax[1, 1].plot(v[iξ, :],  z[iξ, :], c=c, label=label)
-        ax[1, 2].plot(Bz[iξ, :], z[iξ, :], c=c)
-        ax[2, 1].plot(u[iξ, :],  z[iξ, :], c=c)
-        axins21.plot(u[iξ, :],  z[iξ, :], c=c)
-        ax[2, 2].plot(w[iξ, :],  z[iξ, :], c=c)
-        axins22.plot(w[iξ, :],  z[iξ, :], c=c)
+        ax[1, 1].plot(Bz[iξ, :],  z[iξ, :], c=c)
+        ax[1, 2].plot(chi[iξ, :], z[iξ, :], c=c)
+        ax[1, 3].plot(bx[iξ, :],  z[iξ, :], c=c)
+        ax[2, 1].plot(u[iξ, :],   z[iξ, :], c=c)
+        ax[2, 2].plot(v[iξ, :],   z[iξ, :], c=c)
+        ax[2, 3].plot(w[iξ, :],   z[iξ, :], c=c, label=label)
+        axins11.plot(Bz[iξ, :],   z[iξ, :], c=c)
+        axins21.plot(u[iξ, :],    z[iξ, :], c=c)
 
-        ax[1, 1].plot(v1D[iξ, :], z[iξ, :], c=c, ls=":")
-        ax[1, 2].plot(Bz1D[iξ, :],z[iξ, :], c=c, ls=":")
-        ax[2, 1].plot(u1D[iξ, :], z[iξ, :], c=c, ls=":")
-        axins21.plot(u1D[iξ, :],  z[iξ, :], c=c, ls=":")
-        ax[2, 2].plot(w1D[iξ, :], z[iξ, :], c=c, ls=":")
-        axins22.plot(w1D[iξ, :],  z[iξ, :], c=c, ls=":")
+        ax[1, 1].plot(Bz1D[iξ, :], z[iξ, :], c=c, ls=":")
+        ax[2, 1].plot(u1D[iξ, :],  z[iξ, :], c=c, ls=":")
+        ax[2, 2].plot(v1D[iξ, :],  z[iξ, :], c=c, ls=":")
+        ax[2, 3].plot(w1D[iξ, :],  z[iξ, :], c=c, ls=":")
+        axins11.plot(Bz1D[iξ, :],  z[iξ, :], c=c, ls=":")
+        axins21.plot(u1D[iξ, :],   z[iξ, :], c=c, ls=":")
     end
 
-    ax[1, 1].legend()
+    ax[2, 3].legend()
 
     savefig("profiles.png", bbox="inches")
 end

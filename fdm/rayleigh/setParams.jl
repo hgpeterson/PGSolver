@@ -9,12 +9,12 @@ N = 1e-3
 r = 0.1*β*L
 
 # turn on/off variations in ξ
-ξVariation = false
-#= ξVariation = true =#
+#= ξVariation = false =#
+ξVariation = true
 
 # set U = 0 or compute U at each time step?
-#= symmetry = false =#
-symmetry = true
+symmetry = false
+#= symmetry = true =#
 
 # topography
 amp =  0.4*H0

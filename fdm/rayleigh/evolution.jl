@@ -101,10 +101,10 @@ function evolve(nSteps)
     nPts = nξ*nσ
 
     # timestep
-    Δt = 86400
+    Δt = 10*86400
     nStepsInvert = 1
-    nStepsPlot = 100
-    nStepsSave = 1000
+    nStepsPlot = 10
+    nStepsSave = 100
     adaptiveTimestep = false
 
     # for flattening for matrix mult
@@ -162,7 +162,7 @@ function evolve(nSteps)
         if ξVariation
             fAdvRHS(bVec, t) = -(uξVec.*(ξDerivativeMat*bVec) + uσVec.*(σDerivativeMat*bVec) + N^2*uξVec.*HxVec.*σσVec + N^2*uσVec.*HVec)
         else
-            fAdvRHS(bVec, t) = -(uσVec.*(σDerivativeMat*bVec) + N^2*uξVec.*HxVec.*σσVec + N^2*uσVec.*HVec)
+            fAdvRHS(bVec, t) = -N^2*uξVec.*HxVec.*σσVec
         end
 
         # explicit timestep for advection
@@ -184,9 +184,9 @@ function evolve(nSteps)
             # reshape
             b = reshape(bVec, nξ, nσ)
 
-            # test 1D error
-            b1D, u1D, v1D, w1D = pointwise1D(t)
-            println(@sprintf("1D Max Error: %1.2e", maximum(abs.(b - b1D))))
+            #= # test 1D error =#
+            #= b1D, u1D, v1D, w1D = pointwise1D(t) =#
+            #= println(@sprintf("1D Max Error: %1.2e", maximum(abs.(b - b1D)))) =#
 
             # invert buoyancy for flow
             chi, uξ, uη, uσ, U = invert(b, inversionLHS)

@@ -110,7 +110,11 @@ function postProcess(sol)
     uη = -f*uξ/r
 
     # compute uσ = -dξ(chi)/H
-    uσ = -ξDerivativeTF(chi)./H.(x)
+    if ξVariation
+        uσ = -ξDerivativeTF(chi)./H.(x)
+    else
+        uσ = zeros(nξ, nσ)
+    end
 
     return chi, uξ, uη, uσ, U
 end
