@@ -92,19 +92,22 @@ function getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy)
 end
 
 """
-    b = evolve(nSteps)
+    b = evolve(tFinalDays)
 
-Solve full nonlinear equation for `b` for `nSteps` time steps.
+Solve full nonlinear equation for `b` for `tFinalDays` days.
 """
-function evolve(nSteps; ξVariation=true)
+function evolve(tFinalDays)
     # grid points
     nPts = nξ*nσ
 
     # timestep
     Δt = 10*86400
+    nSteps = Int64(tFinalDays*86400/Δt)
     nStepsInvert = 1
-    nStepsPlot = 10
-    nStepsSave = 100
+    nDaysPlot = 100
+    nDaysSave = 1000
+    nStepsPlot = Int64(nDaysPlot*86400/Δt)
+    nStepsSave = Int64(nDaysSave*86400/Δt)
     adaptiveTimestep = false
 
     # for flattening for matrix mult
@@ -163,7 +166,7 @@ function evolve(nSteps; ξVariation=true)
         if ξVariation
             fAdvRHS(bVec, t) = -(uξVec.*(ξDerivativeMat*bVec) + uσVec.*(σDerivativeMat*bVec) + N^2*uξVec.*HxVec.*σσVec + N^2*uσVec.*HVec)
         else
-            fAdvRHS(bVec, t) = -(uσVec.*(σDerivativeMat*bVec) + N^2*uξVec.*HxVec.*σσVec + N^2*uσVec.*HVec)
+            fAdvRHS(bVec, t) = -N^2*uξVec.*HxVec.*σσVec
         end
 
         # explicit timestep for advection
@@ -186,7 +189,7 @@ function evolve(nSteps; ξVariation=true)
             b = reshape(bVec, nξ, nσ)
 
             # invert buoyancy for flow
-            chi, uξ, uη, uσ, U = invert(b, inversionLHS; ξVariation=ξVariation)
+            chi, uξ, uη, uσ, U = invert(b, inversionLHS)
             uξVec = reshape(uξ, nPts, 1)
             uσVec = reshape(uσ, nPts, 1)
             if adaptiveTimestep

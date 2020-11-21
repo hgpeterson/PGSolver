@@ -7,14 +7,15 @@ N = 1e-3
 # as in CF18
 β = 2e-11
 r = 0.1*β*L
+#= r = 1.2e-5 =#
 
 # turn on/off variations in ξ
 #= ξVariation = false =#
 ξVariation = true
 
 # set U = 0 or compute U at each time step?
-symmetry = false
-#= symmetry = true =#
+#= symmetry = false =#
+symmetry = true
 
 # topography
 amp =  0.4*H0
@@ -70,5 +71,6 @@ println(@sprintf("h  = %d m", h))
 println("\nVariations in ξ: ", ξVariation)
 println("Symmetric: ", symmetry)
 
-println(@sprintf("\nBL thickness ~ %1.2f m", sqrt(r*N^2*Hx(x[1, 1])^2/(κ[1, 1]*(f^2 + r^2)))^-1))
+q1 = sqrt(r*N^2*sinθ[1, 1]^2/(cosθ[1, 1]^2*κ[1, 1]*(f^2 + r^2)))
+println(@sprintf("\nBL thickness ~ %1.2f m", q1^-1))
 println(@sprintf(" z[2] - z[1] ~ %1.2f m", H0*(σ[2] - σ[1])))

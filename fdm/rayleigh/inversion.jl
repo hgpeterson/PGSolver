@@ -46,7 +46,6 @@ function getInversionLHS()
         push!(A, (row, row, 1.0))
     end
 
-
     # Create CSC sparse matrix from matrix elements
     A = sparse((x->x[1]).(A), (x->x[2]).(A), (x->x[3]).(A), nPts + nξ, nPts + nξ)
 

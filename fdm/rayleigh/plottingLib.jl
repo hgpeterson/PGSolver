@@ -116,8 +116,8 @@ function profilePlot(datafiles, iξ)
     colors = pl.cm.viridis(range(1, 0, length=5))
 
     # zoomed z
-    ax[1, 1].set_ylim([z[iξ, 1], z[iξ, 1] + H0/10])
-    ax[2, 1].set_ylim([z[iξ, 1], z[iξ, 1] + H0/10])
+    ax[1, 1].set_ylim([z[iξ, 1], z[iξ, 1] + 200])
+    ax[2, 1].set_ylim([z[iξ, 1], z[iξ, 1] + 200])
 
     # plot data from `datafiles
     for i=1:size(datafiles, 1)

@@ -80,9 +80,10 @@ include("evolution.jl")
 # run evolution integrations
 ################################################################################
 
-#= b = evolve(500; ξVariation=false) =#
+b = evolve(5000)
 
-path = "/home/hpeter/Documents/ResearchCallies/rapid_adjustment/sims/sim001/"
+#= path = "../../sims/sim003/" =#
+path = ""
 dfiles = string.(path, ["b1000.h5", "b2000.h5", "b3000.h5", "b4000.h5", "b5000.h5"])
 profilePlot(dfiles, 1)
 

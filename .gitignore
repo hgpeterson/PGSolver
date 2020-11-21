@@ -3,6 +3,7 @@
 *.npz
 *.h5
 *.msh
+*.txt
 
 # ignore images
 *.png
