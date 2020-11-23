@@ -54,46 +54,42 @@ else
     κ = κ1*ones(nξ, nσ)
 end
 
+# timestepping
+Δt = 10*86400
+#= adaptiveTimestep = true =#
+adaptiveTimestep = false
+
+"""
+    log(ofile, text)
+
+Write `text` to `ofile` and print it.
+"""
+function log(ofile::IOStream, text::String)
+    write(ofile, string(text, "\n"))
+    println(text)
+end
+
 # log properties
 ofile = open("out.txt", "w")
-write(ofile, "\nPGSolver with Parameters\n")
+log(ofile, "\nPGSolver with Parameters\n")
 
-write(ofile, @sprintf("nξ = %d", nξ))
-write(ofile, @sprintf("nσ = %d\n", nσ))
-write(ofile, @sprintf("L  = %d km", L/1000))
-write(ofile, @sprintf("H0 = %d m", H0))
-write(ofile, @sprintf("Pr = %1.1f", Pr))
-write(ofile, @sprintf("f  = %1.1e s-1", f))
-write(ofile, @sprintf("N  = %1.1e s-1", N))
-write(ofile, @sprintf("κ0 = %1.1e m2 s-1", κ0))
-write(ofile, @sprintf("κ1 = %1.1e m2 s-1", κ1))
-write(ofile, @sprintf("h  = %d m", h))
+log(ofile, @sprintf("nξ = %d", nξ))
+log(ofile, @sprintf("nσ = %d\n", nσ))
+log(ofile, @sprintf("L  = %d km", L/1000))
+log(ofile, @sprintf("H0 = %d m", H0))
+log(ofile, @sprintf("Pr = %1.1f", Pr))
+log(ofile, @sprintf("f  = %1.1e s-1", f))
+log(ofile, @sprintf("N  = %1.1e s-1", N))
+log(ofile, @sprintf("κ0 = %1.1e m2 s-1", κ0))
+log(ofile, @sprintf("κ1 = %1.1e m2 s-1", κ1))
+log(ofile, @sprintf("h  = %d m", h))
+log(ofile, @sprintf("Δt = %.2f days", Δt/86400))
 
-write(ofile, "\nVariations in ξ: ", ξVariation)
-write(ofile, "Symmetric: ", symmetry)
-write(ofile, "Bottom intensification: ", bottomIntense)
+log(ofile, "\nVariations in ξ: ", ξVariation)
+log(ofile, "Symmetric: ", symmetry)
+log(ofile, "Bottom intensification: ", bottomIntense)
+log(ofile, "Adaptive timestep: ", adaptiveTimestep)
 
-write(ofile, @sprintf("\nEkman layer thickness ~ %1.2f m", sqrt(2*Pr*κ1/abs(f))))
-write(ofile, @sprintf("          z[2] - z[1] ~ %1.2f m", H0*(σ[2] - σ[1])))
+log(ofile, @sprintf("\nEkman layer thickness ~ %1.2f m", sqrt(2*Pr*κ1/abs(f))))
+log(ofile, @sprintf("          z[2] - z[1] ~ %1.2f m\n", H0*(σ[2] - σ[1])))
 close(ofile)
-
-# print properties
-println("\nPGSolver with Parameters\n")
-
-println(@sprintf("nξ = %d", nξ))
-println(@sprintf("nσ = %d\n", nσ))
-println(@sprintf("L  = %d km", L/1000))
-println(@sprintf("H0 = %d m", H0))
-println(@sprintf("Pr = %1.1f", Pr))
-println(@sprintf("f  = %1.1e s-1", f))
-println(@sprintf("N  = %1.1e s-1", N))
-println(@sprintf("κ0 = %1.1e m2 s-1", κ0))
-println(@sprintf("κ1 = %1.1e m2 s-1", κ1))
-println(@sprintf("h  = %d m", h))
-
-println("\nVariations in ξ: ", ξVariation)
-println("Symmetric: ", symmetry)
-println("Bottom intensification: ", bottomIntense)
-
-println(@sprintf("\nEkman layer thickness ~ %1.2f m", sqrt(2*Pr*κ1/abs(f))))
-println(@sprintf("          z[2] - z[1] ~ %1.2f m", H0*(σ[2] - σ[1])))

@@ -92,20 +92,21 @@ function getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy)
 end
 
 """
-    b = evolve(nSteps)
+    b = evolve(tFinalDays)
 
-Solve full nonlinear equation for `b` for `nSteps` time steps.
+Solve full nonlinear equation for `b` for `tFinalDays` days.
 """
-function evolve(nSteps)
+function evolve(tFinalDays)
     # grid points
     nPts = nξ*nσ
 
     # timestep
-    Δt = 10*86400
+    nSteps = Int64(tFinalDays*86400/Δt)
     nStepsInvert = 1
-    nStepsPlot = 10
-    nStepsSave = 100
-    adaptiveTimestep = false
+    nDaysPlot = 100
+    nDaysSave = 1000
+    nStepsPlot = Int64(nDaysPlot*86400/Δt)
+    nStepsSave = Int64(nDaysSave*86400/Δt)
 
     # for flattening for matrix mult
     umap = reshape(1:nPts, nξ, nσ)    

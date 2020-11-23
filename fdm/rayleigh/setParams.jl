@@ -48,29 +48,51 @@ cosθ = @. 1/sqrt(1 + Hx(ξξ)^2)
 κ0 = 6e-7
 κ1 = 2e-5
 h = 200
-κ = κ1*ones(nξ, nσ)
-#= κ = @. κ0 + κ1*exp(-(z + H(x))/h) =#
+#= bottomIntense = true =#
+bottomIntense = false
+if bottomIntense
+    κ = @. κ0 + κ1*exp(-(z + H(x))/h)
+else
+    κ = κ1*ones(nξ, nσ)
+end
     
-# print properties
-println("\nPGSolver with Parameters\n")
+# timestepping
+Δt = 86400
+#= adaptiveTimestep = true =#
+adaptiveTimestep = false
 
-println(@sprintf("nξ = %d", nξ))
-println(@sprintf("nσ = %d\n", nσ))
+"""
+    log(ofile, text)
 
-println(@sprintf("L  = %d km", L/1000))
-println(@sprintf("H0 = %d m", H0))
-println(@sprintf("Pr = %1.1f", Pr))
-println(@sprintf("f  = %1.1e s-1", f))
-println(@sprintf("N  = %1.1e s-1", N))
-println(@sprintf("β  = %1.1e m-1 s-1", β))
-println(@sprintf("r  = %1.1e s-1", r))
-println(@sprintf("κ0 = %1.1e m2 s-1", κ0))
-println(@sprintf("κ1 = %1.1e m2 s-1", κ1))
-println(@sprintf("h  = %d m", h))
+Write `text` to `ofile` and print it.
+"""
+function log(ofile::IOStream, text::String)
+    write(ofile, string(text, "\n"))
+    println(text)
+end
 
-println("\nVariations in ξ: ", ξVariation)
-println("Symmetric: ", symmetry)
+# log properties
+ofile = open("out.txt", "w")
+log(ofile, "\nRayleigh Drag PGSolver with Parameters\n")
+
+log(ofile, @sprintf("nξ = %d", nξ))
+log(ofile, @sprintf("nσ = %d\n", nσ))
+log(ofile, @sprintf("L  = %d km", L/1000))
+log(ofile, @sprintf("H0 = %d m", H0))
+log(ofile, @sprintf("Pr = %1.1f", Pr))
+log(ofile, @sprintf("f  = %1.1e s-1", f))
+log(ofile, @sprintf("N  = %1.1e s-1", N))
+log(ofile, @sprintf("β  = %1.1e m-1 s-1", β))
+log(ofile, @sprintf("r  = %1.1e s-1", r))
+log(ofile, @sprintf("κ0 = %1.1e m2 s-1", κ0))
+log(ofile, @sprintf("κ1 = %1.1e m2 s-1", κ1))
+log(ofile, @sprintf("h  = %d m", h))
+
+log(ofile, string("\nVariations in ξ: ", ξVariation))
+log(ofile, string("Symmetric: ", symmetry))
+log(ofile, string("Bottom intensification: ", bottomIntense))
 
 q1 = sqrt(r*N^2*sinθ[1, 1]^2/(cosθ[1, 1]^2*κ[1, 1]*(f^2 + r^2)))
-println(@sprintf("\nBL thickness ~ %1.2f m", q1^-1))
-println(@sprintf(" z[2] - z[1] ~ %1.2f m", H0*(σ[2] - σ[1])))
+log(ofile, @sprintf("\nBL thickness ~ %1.2f m", q1^-1))
+log(ofile, @sprintf(" z[2] - z[1] ~ %1.2f m\n", H0*(σ[2] - σ[1])))
+close(ofile)
