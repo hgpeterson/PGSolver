@@ -1,7 +1,7 @@
 # parameters (as in RC20)
 L = 2e6
 H0 = 2e3
-Pr = 1e3
+Pr = 1e2
 f = -5.5e-5
 N = 1e-3
 
@@ -20,7 +20,7 @@ Hx(x) = -2*pi/L*amp*cos(2*pi*x/L)
 
 # number of grid points
 nξ = 2^8 + 1 
-nσ = 2^8
+nσ = 2^6
 
 # domain in terrain-following (ξ, σ) space
 dξ = dx = L/nξ
@@ -85,10 +85,10 @@ log(ofile, @sprintf("κ1 = %1.1e m2 s-1", κ1))
 log(ofile, @sprintf("h  = %d m", h))
 log(ofile, @sprintf("Δt = %.2f days", Δt/86400))
 
-log(ofile, "\nVariations in ξ: ", ξVariation)
-log(ofile, "Symmetric: ", symmetry)
-log(ofile, "Bottom intensification: ", bottomIntense)
-log(ofile, "Adaptive timestep: ", adaptiveTimestep)
+log(ofile, string("\nVariations in ξ: ", ξVariation))
+log(ofile, string("Symmetric: ", symmetry))
+log(ofile, string("Bottom intensification: ", bottomIntense))
+log(ofile, string("Adaptive timestep: ", adaptiveTimestep))
 
 log(ofile, @sprintf("\nEkman layer thickness ~ %1.2f m", sqrt(2*Pr*κ1/abs(f))))
 log(ofile, @sprintf("          z[2] - z[1] ~ %1.2f m\n", H0*(σ[2] - σ[1])))
