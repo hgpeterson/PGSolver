@@ -175,7 +175,8 @@ function evolve(tFinalDays)
 
         # boundary fluxes
         evolutionRHS[bottomBdy] .= -N^2
-        evolutionRHS[topBdy] .= 0
+        #= evolutionRHS[topBdy] .= 0 =#
+        evolutionRHS[topBdy] .= -N^2
 
         # solve
         bVec = evolutionLHS\evolutionRHS

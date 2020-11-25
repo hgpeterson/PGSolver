@@ -80,8 +80,9 @@ include("evolution.jl")
 # run evolution integrations
 ################################################################################
 
-#= b = evolve(5000) =#
+b = evolve(5000)
 
-#= path = "" =#
-#= dfiles = string.(path, ["b1000.h5", "b2000.h5", "b3000.h5", "b4000.h5", "b5000.h5"]) =#
-#= profilePlot(dfiles, 1) =#
+path = ""
+dfiles = string.(path, ["b1000.h5", "b2000.h5", "b3000.h5", "b4000.h5", "b5000.h5"])
+#= dfiles = string.(path, ["b1000.h5", "b2000.h5", "b3000.h5"]) =#
+profilePlot(dfiles, 1)

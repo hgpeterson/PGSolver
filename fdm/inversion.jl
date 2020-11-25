@@ -11,7 +11,7 @@ Setup left hand side of linear system for problem.
 """
 function getInversionLHS()
     nPts = nξ*nσ
-    iU = (nPts+1):(nPts+1+nξ) # add nξ equations for vertically integrated zonal flow
+    iU = (nPts+1):(nPts+nξ) # add nξ equations for vertically integrated zonal flow
 
     umap = reshape(1:nPts, nξ, nσ)    
     A = Tuple{Int64,Int64,Float64}[]  
@@ -83,64 +83,46 @@ function getInversionLHS()
             # term 2
             push!(A, (row, umap[i, j], f^2/(Pr*κ[i, j])))
             # term 3
-            push!(A, (row, iU[i], -f^2/(Pr*κ[i, j])))
+            push!(A, (row, iU[i],     -f^2/(Pr*κ[i, j])))
         end
-        # if dξ(p) = 0 then 
-        #   (1) dσσ(nu*dσσ(chi))/H^4 + f^2*U*H/nu = Hx*b/H - Hx*N^2 at σ = -1
-        #       for canonical 1D solution
-        #   (2) U = 0
+
+        # if dξ(b) ~ 0 then 
+        #   (1) U = 0
         #       for fixed 1D solution
+        #   (2) dσ(nu*dσσ(chi))/H^3 = Hx*b at σ = -1
+        #       for canonical 1D solution
         row = iU[i]
         if symmetry
             push!(A, (row, row, 1.0))
         else
-            #= # term 1 (product rule) =#
-            #= push!(A, (row, umap[i, j-1], Pr*κ_σσ*fd_σσ[1]/H(ξ[i])^4)) =#
-            #= push!(A, (row, umap[i, j],   Pr*κ_σσ*fd_σσ[2]/H(ξ[i])^4)) =#
-            #= push!(A, (row, umap[i, j+1], Pr*κ_σσ*fd_σσ[3]/H(ξ[i])^4)) =#
+            # dσ stencil
+            fd_σ = mkfdstencil(σ[1:3], σ[1], 1)
+            κ_σ = sum(fd_σ.*κ[i, 1:3])
 
-            #= push!(A, (row, umap[i, j-2], 2*Pr*κ_σ*fd_σσσ[1]/H(ξ[i])^4)) =#
-            #= push!(A, (row, umap[i, j-1], 2*Pr*κ_σ*fd_σσσ[2]/H(ξ[i])^4)) =#
-            #= push!(A, (row, umap[i, j],   2*Pr*κ_σ*fd_σσσ[3]/H(ξ[i])^4)) =#
-            #= push!(A, (row, umap[i, j+1], 2*Pr*κ_σ*fd_σσσ[4]/H(ξ[i])^4)) =#
-            #= push!(A, (row, umap[i, j+2], 2*Pr*κ_σ*fd_σσσ[5]/H(ξ[i])^4)) =#
+            # dσσ stencil
+            fd_σσ = mkfdstencil(σ[1:3], σ[1], 2)
 
-            #= push!(A, (row, umap[i, j-2], Pr*κ[i, j]*fd_σσσσ[1]/H(ξ[i])^4)) =#
-            #= push!(A, (row, umap[i, j-1], Pr*κ[i, j]*fd_σσσσ[2]/H(ξ[i])^4)) =#
-            #= push!(A, (row, umap[i, j],   Pr*κ[i, j]*fd_σσσσ[3]/H(ξ[i])^4)) =#
-            #= push!(A, (row, umap[i, j+1], Pr*κ[i, j]*fd_σσσσ[4]/H(ξ[i])^4)) =#
-            #= push!(A, (row, umap[i, j+2], Pr*κ[i, j]*fd_σσσσ[5]/H(ξ[i])^4)) =#
-            #= # term 2 =#
-            #= push!(A, (row, umap[i, j], f^2/(Pr*κ[i, j]))) =#
-            
+            # dσσσ stencil
+            fd_σσσ = mkfdstencil(σ[1:5], σ[1], 3)
+
+            # product rule
+            push!(A, (row, umap[i, 1], Pr*κ_σ*fd_σσ[1]/H(ξ[i])^3))
+            push!(A, (row, umap[i, 2], Pr*κ_σ*fd_σσ[2]/H(ξ[i])^3))
+            push!(A, (row, umap[i, 3], Pr*κ_σ*fd_σσ[3]/H(ξ[i])^3))
+
+            push!(A, (row, umap[i, 1], Pr*κ[i, 1]*fd_σσσ[1]/H(ξ[i])^3))
+            push!(A, (row, umap[i, 2], Pr*κ[i, 1]*fd_σσσ[2]/H(ξ[i])^3))
+            push!(A, (row, umap[i, 3], Pr*κ[i, 1]*fd_σσσ[3]/H(ξ[i])^3))
+            push!(A, (row, umap[i, 4], Pr*κ[i, 1]*fd_σσσ[4]/H(ξ[i])^3))
+            push!(A, (row, umap[i, 5], Pr*κ[i, 1]*fd_σσσ[5]/H(ξ[i])^3))
         end
     end
 
-    #= # zonal mean / integral equation for bottom stress =#
-    #= #   < int_-1^0 (f^2*chi/nu + U) dσ + dσ(nu*dσσ(chi))/H^3 > = 0 =#
-    #= row = iU =#
-    #= push!(A, (row, iU, 1.0)) =#
-    #= #1= rhs[row] = κ1/Hx(ξ[1]) =1# =#
-    
-    #= #1= # term 1 =1# =#
-    #= #1= for i=1:nξ =1# =#
-    #= #1=     for j=1:nσ =1# =#
-    #= #1=         push!(A, (row, umap[i, j], f^2/(Pr*κ)*dξ/L*dσ)) =1# =#
-    #= #1=         push!(A, (row, iU,         f*dξ/L*dσ)) =1# =#
-    #= #1=     end =1# =#
-    #= #1= end =1# =#
-    #= #1= # term 2 =1# =#
-    #= #1= fd_σσσ_top = mkfdstencil(σ[nσ-4:nσ], σ[nσ], 3) =1# =#
-    #= #1= for i=1:nξ =1# =#
-    #= #1=     push!(A, (row, umap[i, nσ-4], Pr*κ*fd_σσσ_top[1]*dξ/L/H(ξ[i])^3)) =1# =#
-    #= #1=     push!(A, (row, umap[i, nσ-3], Pr*κ*fd_σσσ_top[2]*dξ/L/H(ξ[i])^3)) =1# =#
-    #= #1=     push!(A, (row, umap[i, nσ-2], Pr*κ*fd_σσσ_top[3]*dξ/L/H(ξ[i])^3)) =1# =#
-    #= #1=     push!(A, (row, umap[i, nσ-1], Pr*κ*fd_σσσ_top[4]*dξ/L/H(ξ[i])^3)) =1# =#
-    #= #1=     push!(A, (row, umap[i, nσ],   Pr*κ*fd_σσσ_top[5]*dξ/L/H(ξ[i])^3)) =1# =#
-    #= #1= end =1# =#
-
     # Create CSC sparse matrix from matrix elements
-    A = sparse((x->x[1]).(A), (x->x[2]).(A), (x->x[3]).(A), nPts + nξ, nPts + nξ)
+    A = sparse((x->x[1]).(A), (x->x[2]).(A), (x->x[3]).(A), nPts+nξ, nPts+nξ)
+
+    println(rank(A))
+    println(nPts+nξ)
 
     return A
 end
@@ -153,10 +135,10 @@ Setup right hand side of linear system for problem.
 function getInversionRHS(b)
     nPts = nξ*nσ
     umap = reshape(1:nPts, nξ, nσ)    
-    iU = (nPts+1):(nPts+1+nξ) # add nξ equations for vertically integrated zonal flow
+    iU = (nPts+1):(nPts+nξ) # add nξ equations for vertically integrated zonal flow
 
     # return as vector
-    rhsVec = zeros(nPts + nξ)                      
+    rhsVec = zeros(nPts+nξ)                      
 
     # eqtn: dσσ(nu*dσσ(chi))/H^4 + f^2*(chi - U)/nu = dξ(b) - dx(H)*σ*dσ(b)/H
     if ξVariation
@@ -164,16 +146,18 @@ function getInversionRHS(b)
     else
         rhs = -Hx.(ξξ).*σσ.*σDerivativeTF(b)./H.(ξξ)
     end
-    rhs[umap[:, [1, 2, nσ-2, nσ]]] .= 0 # boundary conditions require zeros on the rhs
+    rhs[umap[:, [1, 2, nσ-1, nσ]]] .= 0 # boundary conditions require zeros on the rhs
     rhsVec[umap[:, :]] = reshape(rhs, nPts, 1)
 
-    # if dξ(p) = 0 then 
-    #   (1) U = FIXME
-    #       for canonical 1D solution
-    #   (2) U = 0
+    # if dξ(b) ~ 0 then 
+    #   (1) U = 0
     #       for fixed 1D solution
-    if !symmetry
-        #= println(@sprintf("U[1] = %1.2e", rhsVec[iU[1]])) =#
+    #   (2) dσ(nu*dσσ(chi))/H^3 = Hx*b at σ = -1
+    #       for canonical 1D solution
+    if symmetry
+        #= rhsVec[iU] .= 1.0 =#
+    else
+        rhsVec[iU] = Hx.(ξ).*b[:, 1]
     end
 
     return rhsVec
@@ -192,13 +176,18 @@ function postProcess(sol)
     # reshape rest of solution to get chi
     chi = reshape(sol[1:end-nξ], nξ, nσ)
 
+    #= println(U[1]) =#
+    #= println(chi[1, nσ]) =#
+    println(U[194])
+    println(chi[194, nσ])
+
     # compute uξ = dσ(chi)/H
     uξ = σDerivativeTF(chi)./H.(x)
 
     # compute uη = int_-1^0 f*chi/nu dσ*H
     uη = zeros(nξ, nσ)
     for i=1:nξ
-        uη[i, :] = cumtrapz(f*chi[i, :]./(Pr*κ[i, :]) .- U[i], σ)*H(ξ[i])
+        uη[i, :] = cumtrapz(f*(chi[i, :] .- U[i])./(Pr*κ[i, :]), σ)*H(ξ[i])
     end
 
     # compute uσ = -dξ(chi)/H
