@@ -25,9 +25,9 @@ nσ = 2^8
 # domain in terrain-following (ξ, σ) space
 dξ = dx = L/nξ
 ξ = 0:dξ:(L - dξ)
-#= σ = @. -(cos(pi*(0:nσ-1)/(nσ-1)) + 1)/2 # chebyshev =# 
-dσ = 1/(nσ - 1)
-σ = -1:dσ:0
+σ = @. -(cos(pi*(0:nσ-1)/(nσ-1)) + 1)/2 # chebyshev 
+#= dσ = 1/(nσ - 1) =#
+#= σ = -1:dσ:0 =#
 ξξ = repeat(ξ, 1, nσ)
 σσ = repeat(σ', nξ, 1)
 dσ = zeros(nξ, nσ)

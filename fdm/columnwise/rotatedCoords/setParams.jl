@@ -5,13 +5,9 @@ Pr = 1e0
 f = -5.5e-5
 N = 1e-3
 
-# turn on/off variations in ξ
-ξVariation = false
-#= ξVariation = true =#
-
 # set U = 0 or compute U at each time step?
-symmetry = false
-#= symmetry = true =#
+#= symmetry = false =#
+symmetry = true
 
 # topography
 amp =  0.4*H0
@@ -19,39 +15,33 @@ H(x) = H0 - amp*sin(2*pi*x/L) # hill
 Hx(x) = -2*pi/L*amp*cos(2*pi*x/L)
 
 # number of grid points
-nξ = 2^8 + 1 
-nσ = 2^8
+nx = 2^8 + 1 
+nz = 2^8
 
-# domain in terrain-following (ξ, σ) space
-dξ = dx = L/nξ
-ξ = 0:dξ:(L - dξ)
-#= σ = @. -(cos(pi*(0:nσ-1)/(nσ-1)) + 1)/2 # chebyshev =# 
-dσ = 1/(nσ - 1)
-σ = -1:dσ:0
-ξξ = repeat(ξ, 1, nσ)
-σσ = repeat(σ', nξ, 1)
-dσ = zeros(nξ, nσ)
-dσ[:, 1:end-1] = σσ[:, 2:end] - σσ[:, 1:end-1]
-dσ[:, end] = dσ[:, end-1]
+# domain in physical (x, z) space
+dx = L/nx
+x = repeat(0:dx:(L - dx), 1, nz)
+σ = @. -(cos(pi*(0:nz-1)/(nz-1)) + 1)/2 # chebyshev 
+z = repeat(σ', nx, 1).*repeat(H.(x[:, 1]), 1, nz)
 
-# domain in physical (x, z) space (2D arrays)
-x = repeat(ξ, 1, nσ)
-z = repeat(σ', nξ, 1).*repeat(H.(ξ), 1, nσ)
+# arrays of sin(θ) and cos(θ) 
+sinθ = @. -Hx(x)/sqrt(1 + Hx(x)^2)
+cosθ = @. 1/sqrt(1 + Hx(x)^2) 
+θ = asin.(sinθ[:, 1])
 
-# arrays of sin(θ) and cos(θ) for 1D solutions
-sinθ = @. -Hx(ξξ)/sqrt(1 + Hx(ξξ)^2)
-cosθ = @. 1/sqrt(1 + Hx(ξξ)^2) 
+# domain in locally rotated (x, ẑ) space
+ẑ = @. z/cosθ
 
 # diffusivity
 κ0 = 6e-5
 κ1 = 2e-3
 h = 200
-bottomIntense = true
-#= bottomIntense = false =#
+#= bottomIntense = true =#
+bottomIntense = false
 if bottomIntense
-    κ = @. κ0 + κ1*exp(-(z + H(x))/h)
+    κ = @. κ0 + κ1*exp(-(ẑ + H(x))/h)
 else
-    κ = κ1*ones(nξ, nσ)
+    κ = κ1*ones(nx, nz)
 end
 
 # timestepping
@@ -71,10 +61,10 @@ end
 
 # log properties
 ofile = open("out.txt", "w")
-log(ofile, "\nPGSolver with Parameters\n")
+log(ofile, "\nRotated PGSolver with Parameters\n")
 
-log(ofile, @sprintf("nξ = %d", nξ))
-log(ofile, @sprintf("nσ = %d\n", nσ))
+log(ofile, @sprintf("nx = %d", nx))
+log(ofile, @sprintf("nz = %d\n", nz))
 log(ofile, @sprintf("L  = %d km", L/1000))
 log(ofile, @sprintf("H0 = %d m", H0))
 log(ofile, @sprintf("Pr = %1.1f", Pr))
@@ -85,7 +75,6 @@ log(ofile, @sprintf("κ1 = %1.1e m2 s-1", κ1))
 log(ofile, @sprintf("h  = %d m", h))
 log(ofile, @sprintf("Δt = %.2f days", Δt/86400))
 
-log(ofile, string("\nVariations in ξ:        ", ξVariation))
 log(ofile, string("Symmetric:              ", symmetry))
 log(ofile, string("Bottom intensification: ", bottomIntense))
 log(ofile, string("Adaptive timestep:      ", adaptiveTimestep))

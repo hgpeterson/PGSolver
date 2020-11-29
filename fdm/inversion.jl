@@ -23,10 +23,6 @@ function getInversionLHS()
 
     # Main loop, insert stencil in matrix for each node point
     for i=1:nξ
-        # Boundary conditions: periodic in ξ
-        iL = mod1(i-1, nξ)
-        iR = mod1(i+1, nξ)
-
         # Lower boundary conditions 
         # b.c. 1: dσ(chi) = 0
         push!(A, (umap[i, 1], umap[i, 1], fd_bot[1]))
@@ -100,7 +96,7 @@ function getInversionLHS()
             κ_σ = sum(fd_σ.*κ[i, 1:3])
 
             # dσσ stencil
-            fd_σσ = mkfdstencil(σ[1:3], σ[1], 2)
+            fd_σσ = mkfdstencil(σ[1:4], σ[1], 2)
 
             # dσσσ stencil
             fd_σσσ = mkfdstencil(σ[1:5], σ[1], 3)
@@ -109,6 +105,7 @@ function getInversionLHS()
             push!(A, (row, umap[i, 1], Pr*κ_σ*fd_σσ[1]/H(ξ[i])^3))
             push!(A, (row, umap[i, 2], Pr*κ_σ*fd_σσ[2]/H(ξ[i])^3))
             push!(A, (row, umap[i, 3], Pr*κ_σ*fd_σσ[3]/H(ξ[i])^3))
+            push!(A, (row, umap[i, 4], Pr*κ_σ*fd_σσ[4]/H(ξ[i])^3))
 
             push!(A, (row, umap[i, 1], Pr*κ[i, 1]*fd_σσσ[1]/H(ξ[i])^3))
             push!(A, (row, umap[i, 2], Pr*κ[i, 1]*fd_σσσ[2]/H(ξ[i])^3))
