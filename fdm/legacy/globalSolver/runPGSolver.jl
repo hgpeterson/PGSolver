@@ -4,7 +4,7 @@ plt.style.use("~/paper_plots.mplstyle")
 close("all")
 pygui(false)
 
-include("../../myJuliaLib.jl")
+include("../myJuliaLib.jl")
 include("setParams.jl")
 include("terrainFollowing.jl")
 include("plottingLib.jl")
@@ -14,11 +14,31 @@ include("evolution.jl")
 ################################################################################
 # manually set `b` if you want
 ################################################################################
-#= b = @. h*N^2*exp(-(z + H(x))/h) =#
+#= b = zeros(nξ, nσ) =#
+#= bx = zeros(nξ, nσ) =#
+#= for i=1:nξ =#
+#=     for j=1:nσ =#
+#=         # exponential in σ (centered at bottom) =#
+#=         decay_scale = 200/H0 =#
+#=         A = decay_scale*N^2*H0 =#
+#=         b[i, j] = A*exp(-N^2*H(ξ[i])*(σ[j] + 1)/A) =#
+#=         bx[i, j] = -N^2*Hx(ξ[i])*exp(-N^2*H(ξ[i])*(σ[j] + 1)/A) =#
 
-#= file = h5open("/home/hpeter/Documents/ResearchCallies/rapid_adjustment/sims/sim000/b5000.h5") =#
-#= b = read(file, "b") =#
-#= close(file) =#
+#=         #1= # gaussian in σ (centered at bottom) =1# =#
+#=         #1= b[i, j] = N^2*amp*exp(-(σ[j] + 1)^2/2/(1/4)^2) =1# =#
+#=         #1= bx[i, j] = N^2*amp*exp(-(σ[j] + 1)^2/2/(1/4)^2)*(σ[j] + 1)/(1/4)^2*σ[j]*Hx(ξ[i])/H(ξ[i]) =1# =#
+#=     end =#
+#= end =#
+
+#= b = @. h*N^2*exp(-(z + H(x))/h) =#
+#= #1= bx = @. -N^2*Hx(x)*exp(-(z + H(x))/h) =1# =#
+#= bx = zeros(nξ, nσ) =#
+#= for j=1:nσ =#
+#=     bx[:, j] = differentiate(b[:, j], ξ) =#
+#= end =#
+#= for i=1:nξ =#
+#=     bx[i, :] .-= Hx(ξ[i])*σ.*differentiate(b[i, :], σ)/H(ξ[i]) =#
+#= end =#
 
 ################################################################################
 # test 1DAdjusted inversion
@@ -60,53 +80,9 @@ include("evolution.jl")
 # run evolution integrations
 ################################################################################
 
-println("Computing inversion matrices")
-inversionLHSs = Array{Any}(undef, nξ)
-for i=1:nξ
-    inversionLHSs[i] = lu(getInversionLHS(κ[i, :], H(ξ[i])))
-end 
-
 b = evolve(5000)
 
-#= path = "" =#
-#= dfiles = string.(path, ["b1000.h5", "b2000.h5", "b3000.h5", "b4000.h5", "b5000.h5"]) =#
-#= profilePlot(dfiles, 1) =#
-
-
-# tests
-#= iξ = 150 =#
-#= inversionLHS = getInversionLHS(κ[iξ, :], H(ξ[iξ])) =#
-#= inversionRHS = getInversionRHS(b) =#
-
-
-#= sol = zeros(nξ, nσ+1) =#
-#= inversionRHS = getInversionRHS(b) =#
-#= for i=1:nξ =#
-#=     sol[i, :] = inversionLHSs[i]\inversionRHS[i, :] =#
-#= end =#
-
-#= sol = inversionLHS\inversionRHS[iξ, :] =#
-#= println(size(inversionLHS)) =#
-#= println(size(inversionRHS)) =#
-#= sol = (inversionLHS\inversionRHS')' =#
-
-#= sol = sol[iξ, :] =#
-#= chi = sol[1:nσ] =#
-#= U = sol[nσ+1] =#
-#= plot(chi, σ) =#
-#= axvline(U, lw=1, c="tab:orange") =#
-
-#= chi, uξ, uη, uσ, U = postProcess(sol) =#
-#= u, v, w = transformFromTF(uξ, uη, uσ) =#
-#= ridgePlot(chi, b, "chi", "chi") =#
-#= savefig("chi.png") =#
-#= close() =#
-#= ridgePlot(u, b, "u", "u") =#
-#= savefig("u.png") =#
-#= close() =#
-#= ridgePlot(v, b, "v", "v") =#
-#= savefig("v.png") =#
-#= close() =#
-#= ridgePlot(w, b, "w", "w") =#
-#= savefig("w.png") =#
-#= close() =#
+path = ""
+dfiles = string.(path, ["b1000.h5", "b2000.h5", "b3000.h5", "b4000.h5", "b5000.h5"])
+#= dfiles = string.(path, ["b1000.h5", "b2000.h5", "b3000.h5"]) =#
+profilePlot(dfiles, 1)

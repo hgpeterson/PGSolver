@@ -14,9 +14,8 @@ include("canonical1D.jl")
 ################################################################################
 # run evolution integrations
 ################################################################################
-#= b = evolve(500) =#
-#= profilePlot(["b1000.h5", "b2000.h5", "b3000.h5", "b4000.h5", "b5000.h5"], 1) =#
 
 #= sol = evolveCanonical1D(40000) =#
-#= sol = steadyState() =#
-profilePlot(["sol10.h5", "sol20.h5", "sol30.h5", "sol40.h5", "sol50.h5", "solSteady.h5"], 1)
+#= sol = evolveCanonical1D(500) =#
+sol = steadyState()
+profilePlot(["sol1000.h5", "sol2000.h5", "sol3000.h5", "sol4000.h5", "sol5000.h5", "solSteady.h5"], 1)

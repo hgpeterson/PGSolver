@@ -32,8 +32,8 @@ ẑẑ = @. zz/cosθ
 κ0 = 6e-5
 κ1 = 2e-3
 h = 200
-#= κ = κ1*ones(nx, nz) =#
-κ = @. κ0 + κ1*exp(-(ẑẑ + H(xx))/h)
+κ = κ1*ones(nx, nz)
+#= κ = @. κ0 + κ1*exp(-(ẑẑ + H(xx))/h) =#
 
 # print properties
 println("\nPGSolver with Parameters\n")

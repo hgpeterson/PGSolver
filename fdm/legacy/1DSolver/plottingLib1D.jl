@@ -70,21 +70,23 @@ at x = x[ix].
 """
 function profilePlot(datafiles, ix)
     # init plot
-    fig, ax = subplots(2, 2, figsize=(6.5, 6.5/1.62), sharey=true)
+    fig, ax = subplots(2, 2, figsize=(6.5, 6.5/1.62))
 
-    ax[1, 1].set_xlabel(L"$u$ (m s$^{-1}$)")
-    ax[1, 1].set_ylabel(L"$z$ (m)")
-    ax[1, 1].set_title("cross-ridge velocity")
+    ax[1, 1].set_xlabel(L"$B_z$ (s$^{-2}$)")
+    ax[1, 1].set_title("stratification")
 
     ax[1, 2].set_xlabel(L"$v$ (m s$^{-1}$)")
     ax[1, 2].set_title("along-ridge velocity")
 
-    ax[2, 1].set_xlabel(L"$w$ (m s$^{-1}$)")
+    ax[2, 1].set_xlabel(L"$u$ (m s$^{-1}$)")
     ax[2, 1].set_ylabel(L"$z$ (m)")
-    ax[2, 1].set_title("vertical velocity")
+    ax[2, 1].set_title("cross-ridge velocity")
+    ax[2, 1].set_ylim([zz[ix, 1], zz[ix, 1] + 200])
 
-    ax[2, 2].set_xlabel(L"$B_z$ (s$^{-2}$)")
-    ax[2, 2].set_title("stratification")
+    ax[2, 2].set_xlabel(L"$w$ (m s$^{-1}$)")
+    ax[2, 2].set_ylabel(L"$z$ (m)")
+    ax[2, 2].set_title("vertical velocity")
+    ax[2, 2].set_ylim([zz[ix, 1], zz[ix, 1] + 200])
 
     tight_layout()
 
@@ -123,7 +125,7 @@ function profilePlot(datafiles, ix)
         # convert to physical coordinates 
         u, w = rotate(û)
 
-        # stratification #FIXME is this right???
+        # stratification 
         Bz = N^2*cosθ .+ ẑDerivative(b)
 
         # colors and labels
@@ -136,13 +138,13 @@ function profilePlot(datafiles, ix)
         end
 
         # plot
-        ax[1, 1].plot(u[ix, :],  zz[ix, :], c=c, label=label)
+        ax[1, 1].plot(Bz[ix, :], zz[ix, :], c=c)
         ax[1, 2].plot(v[ix, :],  zz[ix, :], c=c)
-        ax[2, 1].plot(w[ix, :],  zz[ix, :], c=c)
-        ax[2, 2].plot(Bz[ix, :], zz[ix, :], c=c)
+        ax[2, 1].plot(u[ix, :],  zz[ix, :], c=c)
+        ax[2, 2].plot(w[ix, :],  zz[ix, :], c=c, label=label)
     end
 
-    ax[1, 1].legend()
+    ax[2, 2].legend()
 
     savefig("profiles.png")
 end

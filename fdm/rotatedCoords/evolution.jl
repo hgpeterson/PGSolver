@@ -13,10 +13,6 @@ function getEvolutionMatrices()
 
     # Main loop, insert stencil in matrices for each node point
     for i=1:nx
-        # periodic in x
-        iL = mod1(i-1, nx)
-        iR = mod1(i+1, nx)
-
         # interior nodes only for operators
         for j=2:nz-1
             row = umap[i, j] 
@@ -79,56 +75,6 @@ function getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy)
 end
 
 """
-    saveCheckpoint(b, chi, û, v, U, t)
-
-Save .h5 checkpoint file for state `b` at time `t`.
-"""
-function saveCheckpoint(b, chi, û, v, U, t)
-    tDays = t/86400
-    savefile = @sprintf("checkpoint%d.h5", tDays)
-    file = h5open(savefile, "w")
-    write(file, "b", b)
-    write(file, "chi", chi)
-    write(file, "û", û)
-    write(file, "v", v)
-    write(file, "U", U)
-    write(file, "t", t)
-    write(file, "L", L)
-    write(file, "H0", H0)
-    write(file, "Pr", Pr)
-    write(file, "f", f)
-    write(file, "N", N)
-    write(file, "symmetry", symmetry)
-    write(file, "κ", κ)
-    close(file)
-    println(savefile)
-end
-
-"""
-    b, chi, û, v, U, t, L, H0, Pr, f, N, symmetry, κ = loadCheckpoint(filename)
-
-Load .h5 checkpoint file given by `filename`.
-"""
-function loadCheckpoint(filename)
-    file = h5open(filename, "r")
-    b = read(file, "b")
-    chi = read(file, "chi")
-    û = read(file, "û")
-    v = read(file, "v")
-    U = read(file, "U")
-    t = read(file, "t")
-    L = read(file, "L")
-    H0 = read(file, "H0")
-    Pr = read(file, "Pr")
-    f = read(file, "f")
-    N = read(file, "N")
-    symmetry = read(file, "symmetry")
-    κ = read(file, "κ")
-    close(file)
-    return b, chi, û, v, U, t, L, H0, Pr, f, N, symmetry, κ
-end
-
-"""
     b = evolve(tFinalDays)
 
 Solve equation for `b` for `nSteps` time steps.
@@ -141,7 +87,7 @@ function evolve(tFinalDays)
     nSteps = Int64(tFinalDays*86400/Δt)
     nStepsInvert = 1
     nDaysPlot = 500
-    nDaysSave = 10
+    nDaysSave = 1000
     nStepsPlot = Int64(nDaysPlot*86400/Δt)
     nStepsSave = Int64(nDaysSave*86400/Δt)
 
@@ -160,7 +106,7 @@ function evolve(tFinalDays)
     t = 0
     b = zeros(nx, nz)
     chi, û, v, U = invert(b)
-    saveCheckpoint(b, chi, û, v, U, t)
+    saveCheckpointRot(b, chi, û, v, U, t)
 
     # flatten for matrix mult
     bVec = reshape(b, nPts, 1)
@@ -208,7 +154,7 @@ function evolve(tFinalDays)
             plotCurrentState(t, chi, û, v, b, iImg)
         end
         if i % nStepsSave == 0
-            saveCheckpoint(b, chi, û, v, U, t)
+            saveCheckpointRot(b, chi, û, v, U, t)
         end
     end
 

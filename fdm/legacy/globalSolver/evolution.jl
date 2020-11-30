@@ -103,7 +103,7 @@ function evolve(tFinalDays)
     # timestep
     nSteps = Int64(tFinalDays*86400/Δt)
     nStepsInvert = 1
-    nDaysPlot = 500
+    nDaysPlot = 100
     nDaysSave = 1000
     nStepsPlot = Int64(nDaysPlot*86400/Δt)
     nStepsSave = Int64(nDaysSave*86400/Δt)
@@ -118,6 +118,9 @@ function evolve(tFinalDays)
 
     # left-hand side for evolution equation (save LU decomposition for speed)
     evolutionLHS = lu(getEvolutionLHS(Δt, diffMat, bdyFluxMat, bottomBdy, topBdy))
+
+    # left-hand side for inversion equations
+    inversionLHS = lu(getInversionLHS())
 
     # vectors of H, Hx, and σ values for the N^*w term
     HVec = reshape(H.(x), nPts, 1)
@@ -134,7 +137,7 @@ function evolve(tFinalDays)
     #= close(file) =#
 
     # invert initial condition
-    chi, uξ, uη, uσ, U = invert(b)
+    chi, uξ, uη, uσ, U = invert(b, inversionLHS)
     chiEkman = getChiEkman(b)
     
     # plot initial state of all zeros and no flow
@@ -185,7 +188,7 @@ function evolve(tFinalDays)
             b = reshape(bVec, nξ, nσ)
 
             # invert buoyancy for flow
-            chi, uξ, uη, uσ, U = invert(b)
+            chi, uξ, uη, uσ, U = invert(b, inversionLHS)
             uξVec = reshape(uξ, nPts, 1)
             uσVec = reshape(uσ, nPts, 1)
             if adaptiveTimestep

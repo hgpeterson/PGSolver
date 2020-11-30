@@ -97,3 +97,57 @@ function transformToTF(u, v, w)
 
     return uξ, uη, uσ
 end
+
+"""
+    saveCheckpointTF(b, chi, uξ, uη, uσ, U, t)
+
+Save .h5 checkpoint file for state `b` at time `t`.
+"""
+function saveCheckpointTF(b, chi, uξ, uη, uσ, U, t)
+    tDays = t/86400
+    savefile = @sprintf("checkpoint%d.h5", tDays)
+    file = h5open(savefile, "w")
+    write(file, "b", b)
+    write(file, "chi", chi)
+    write(file, "uξ", uξ)
+    write(file, "uη", uη)
+    write(file, "uσ", uσ)
+    write(file, "U", U)
+    write(file, "t", t)
+    write(file, "L", L)
+    write(file, "H0", H0)
+    write(file, "Pr", Pr)
+    write(file, "f", f)
+    write(file, "N", N)
+    write(file, "symmetry", symmetry)
+    write(file, "ξVariation", ξVariation)
+    write(file, "κ", κ)
+    close(file)
+    println(savefile)
+end
+
+"""
+    b, chi, uξ, uη, uσ, U, t, L, H0, Pr, f, N, symmetry, ξVariation, κ = loadCheckpointTF(filename)
+
+Load .h5 checkpoint file given by `filename`.
+"""
+function loadCheckpointTF(filename)
+    file = h5open(filename, "r")
+    b = read(file, "b")
+    chi = read(file, "chi")
+    uξ = read(file, "uξ")
+    uη = read(file, "uη")
+    uσ = read(file, "uσ")
+    U = read(file, "U")
+    t = read(file, "t")
+    L = read(file, "L")
+    H0 = read(file, "H0")
+    Pr = read(file, "Pr")
+    f = read(file, "f")
+    N = read(file, "N")
+    symmetry = read(file, "symmetry")
+    ξVariation, = read(file, "ξVariation")
+    κ = read(file, "κ")
+    close(file)
+    return b, chi, uξ, uη, uσ, U, t, L, H0, Pr, f, N, symmetry, ξVariation, κ
+end

@@ -143,7 +143,10 @@ function evolveCanonical1D(nSteps)
     # timestep
     Δt = 3*3600
     nStepsPlot = 800
-    nStepsSave = 80
+    nStepsSave = 8000
+    #= Δt = 10*86400 =#
+    #= nStepsPlot = 10 =#
+    #= nStepsSave = 100 =#
 
     # for flattening for matrix mult
     umap = reshape(1:nPts, nVars, nx, nz)    

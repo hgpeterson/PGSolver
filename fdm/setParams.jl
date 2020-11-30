@@ -6,12 +6,12 @@ f = -5.5e-5
 N = 1e-3
 
 # turn on/off variations in ξ
-ξVariation = false
-#= ξVariation = true =#
+#= ξVariation = false =#
+ξVariation = true
 
 # set U = 0 or compute U at each time step?
-symmetry = false
-#= symmetry = true =#
+#= symmetry = false =#
+symmetry = true
 
 # topography
 amp =  0.4*H0
@@ -25,9 +25,9 @@ nσ = 2^8
 # domain in terrain-following (ξ, σ) space
 dξ = dx = L/nξ
 ξ = 0:dξ:(L - dξ)
-#= σ = @. -(cos(pi*(0:nσ-1)/(nσ-1)) + 1)/2 # chebyshev =# 
-dσ = 1/(nσ - 1)
-σ = -1:dσ:0
+σ = @. -(cos(pi*(0:nσ-1)/(nσ-1)) + 1)/2 # chebyshev 
+#= dσ = 1/(nσ - 1) =#
+#= σ = -1:dσ:0 =#
 ξξ = repeat(ξ, 1, nσ)
 σσ = repeat(σ', nξ, 1)
 dσ = zeros(nξ, nσ)
@@ -41,13 +41,14 @@ z = repeat(σ', nξ, 1).*repeat(H.(ξ), 1, nσ)
 # arrays of sin(θ) and cos(θ) for 1D solutions
 sinθ = @. -Hx(ξξ)/sqrt(1 + Hx(ξξ)^2)
 cosθ = @. 1/sqrt(1 + Hx(ξξ)^2) 
+θ = asin.(sinθ[:, 1])
 
 # diffusivity
 κ0 = 6e-5
 κ1 = 2e-3
 h = 200
-bottomIntense = true
-#= bottomIntense = false =#
+#= bottomIntense = true =#
+bottomIntense = false
 if bottomIntense
     κ = @. κ0 + κ1*exp(-(z + H(x))/h)
 else

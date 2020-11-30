@@ -129,7 +129,7 @@ function getInversionRHS(b)
     #   (2) dẑ(nu*dẑẑ(chi)) = Hx*b at bottom
     #       for canonical 1D solution
     if symmetry
-        #= rhs[:, iU] .= 1.0 =#
+        #= rhs[:, iU] .= 0 =#
     else
         rhs[:, iU] = Hx.(x[:, 1]).*b[:, 1]
     end

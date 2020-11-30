@@ -173,7 +173,6 @@ function profilePlot(datafiles, iξ)
     fig, ax = subplots(2, 3, figsize=(10, 6.5/1.62))
 
     # insets
-    axins11 = inset_locator.inset_axes(ax[1, 1], width="40%", height="40%", loc="upper center")
     axins21 = inset_locator.inset_axes(ax[2, 1], width="40%", height="40%")
 
     ax[1, 1].set_xlabel(L"$B_z$ (s$^{-2}$)")
@@ -205,18 +204,15 @@ function profilePlot(datafiles, iξ)
     for a in ax
         a.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
     end
-    axins11.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
     axins21.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
-
-    # left-hand side for inversion equations
-    inversionLHS = lu(getInversionLHS())
 
     # color map
     colors = pl.cm.viridis(range(1, 0, length=5))
 
     # zoomed z
-    ax[1, 1].set_ylim([z[iξ, 1], z[iξ, 1] + 200])
+    ax[1, 1].set_ylim([z[iξ, 1], z[iξ, 1] + 1000])
     ax[2, 1].set_ylim([z[iξ, 1], z[iξ, 1] + 200])
+    ax[2, 2].set_ylim([z[iξ, 1], z[iξ, 1] + 1000])
 
     # plot data from `datafiles
     for i=1:size(datafiles, 1)
@@ -226,7 +222,7 @@ function profilePlot(datafiles, iξ)
         close(file)
 
         # invert buoyancy for flow
-        chi, uξ, uη, uσ, U = invert(b, inversionLHS)
+        chi, uξ, uη, uσ, U = invert(b)
 
         # convert to physical coordinates 
         u, v, w = transformFromTF(uξ, uη, uσ)
@@ -248,7 +244,6 @@ function profilePlot(datafiles, iξ)
         ax[2, 1].plot(u[iξ, :],   z[iξ, :], c=c)
         ax[2, 2].plot(v[iξ, :],   z[iξ, :], c=c)
         ax[2, 3].plot(w[iξ, :],   z[iξ, :], c=c, label=label)
-        axins11.plot(Bz[iξ, :],   z[iξ, :], c=c)
         axins21.plot(u[iξ, :],    z[iξ, :], c=c)
     end
 
