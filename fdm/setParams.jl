@@ -1,7 +1,7 @@
 # parameters (as in RC20)
 L = 2e6
 H0 = 2e3
-Pr = 1e1
+Pr = 1e0
 f = -5.5e-5
 N = 1e-3
 

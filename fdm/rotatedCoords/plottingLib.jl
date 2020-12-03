@@ -54,6 +54,10 @@ function ridgePlot(field, b, titleString, cbarLabel; vext=nothing, cmap="RdBu_r"
     ax.set_xlabel(L"$x$ (km)")
     ax.set_ylabel(L"$z$ (m)")
 
+    # no spines
+    ax.spines["left"].set_visible(false)
+    ax.spines["bottom"].set_visible(false)
+
     tight_layout()
     
     return ax
@@ -107,11 +111,7 @@ function profilePlot(datafiles, ix)
     colors = pl.cm.viridis(range(1, 0, length=5))
 
     # zoomed z
-    #= ax[1, 1].set_ylim([z[ix, 1], z[ix, 1] + 1000]) =#
-    ax[1, 2].set_ylim([z[ix, 1], z[ix, 1] + 200])
-    ax[1, 3].set_ylim([z[ix, 1], z[ix, 1] + 200])
     ax[2, 1].set_ylim([z[ix, 1], z[ix, 1] + 200])
-    #= ax[2, 2].set_ylim([z[ix, 1], z[ix, 1] + 1000]) =#
 
     # plot data from `datafiles`
     for i=1:size(datafiles, 1)
@@ -147,6 +147,41 @@ function profilePlot(datafiles, ix)
     savefig("profiles.png", bbox="inches")
 end
 
+"""
+    advectionPlot(datafiles, iξ)
+
+Plot advection terms from HDF5 snapshot files of buoyancy in the `datafiles` list
+at for ξ = ξ[iξ].
+"""
+function advectionProfilePlot(datafiles, iξ)
+    fig, ax = subplots(1, 3, figsize=(3.404*3, 3.404/1.62), sharey=true)
+    colors = pl.cm.viridis(range(1, 0, length=5))
+    for i=1:size(datafiles, 1)
+        # load
+        b, chi, û, v, U, t, L, H0, Pr, f, N, symmetry, κ = loadCheckpointRot(datafiles[i])
+    
+        adv = -N^2*û.*sinθ
+        diff = ẑDerivative(κ.*(N^2*cosθ .+ ẑDerivative(b)))
+        sum = adv + diff
+    
+        ax[1].plot(adv[iξ, :],  ẑ[iξ, :], c=colors[i, :], label=string("Day ", Int64(t/86400)))
+        ax[2].plot(diff[iξ, :], ẑ[iξ, :], c=colors[i, :])
+        ax[3].plot(sum[iξ, :],  ẑ[iξ, :], c=colors[i, :])
+        ax[1].set_xlabel(L"-\hat{u} N^2 \sin\theta")
+        ax[2].set_xlabel(L"[\kappa(N^2\cos\theta + b_\hat{z})]_\hat{z}")
+        ax[3].set_xlabel(L"b_t")
+    end
+    ax[1].set_ylabel(L"\hat{z}")
+    ax[1].legend()
+    tight_layout()
+    savefig("evolProfiles.png")
+end
+
+"""
+    plotCurrentState(t, chi, û, v, b, iImg)
+
+Generate ridgePlot's for each variable.
+"""
 function plotCurrentState(t, chi, û, v, b, iImg)
     # rotate 
     u, w = rotate(û)

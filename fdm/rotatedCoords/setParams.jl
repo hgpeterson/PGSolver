@@ -1,13 +1,13 @@
 # parameters (as in RC20)
 L = 2e6
 H0 = 2e3
-Pr = 1e0
+Pr = 1e3
 f = -5.5e-5
 N = 1e-3
 
 # set U = 0 or compute U at each time step?
-symmetry = false
-#= symmetry = true =#
+#= symmetry = false =#
+symmetry = true
 
 # topography
 amp =  0.4*H0
@@ -15,7 +15,8 @@ H(x) = H0 - amp*sin(2*pi*x/L) # hill
 Hx(x) = -2*pi/L*amp*cos(2*pi*x/L)
 
 # number of grid points
-nx = 2^8 + 1 
+#= nx = 2^8 + 1 =# 
+nx = 1
 nz = 2^8
 
 # domain in physical (x, z) space
@@ -37,7 +38,6 @@ ẑ = @. z/cosθ
 κ1 = 2e-3
 h = 200
 bottomIntense = true
-#= bottomIntense = false =#
 if bottomIntense
     κ = @. κ0 + κ1*exp(-(ẑ + H(x))/h)
 else
@@ -46,7 +46,6 @@ end
 
 # timestepping
 Δt = 10*86400
-#= adaptiveTimestep = true =#
 adaptiveTimestep = false
 
 """

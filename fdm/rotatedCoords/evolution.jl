@@ -86,7 +86,7 @@ function evolve(tFinalDays)
     # timestep
     nSteps = Int64(tFinalDays*86400/Δt)
     nStepsInvert = 1
-    nDaysPlot = 500
+    nDaysPlot = 10000
     nDaysSave = 1000
     nStepsPlot = Int64(nDaysPlot*86400/Δt)
     nStepsSave = Int64(nDaysSave*86400/Δt)
@@ -115,7 +115,7 @@ function evolve(tFinalDays)
     
     # plot initial state of all zeros and no flow
     iImg = 0
-    plotCurrentState(t, chi, û, v, b, iImg)
+    #= plotCurrentState(t, chi, û, v, b, iImg) =#
 
     # main loop
     for i=1:nSteps
@@ -126,7 +126,7 @@ function evolve(tFinalDays)
         diffRHS = bVec + diffVec*Δt
 
         # compute advection RHS
-        advRHS = @. -ûVec*N^2*sinθVec
+        advRHS = @. -Δt*ûVec*N^2*sinθVec
 
         # sum the two
         evolutionRHS = diffRHS + advRHS

@@ -140,9 +140,6 @@ function evolve(tFinalDays)
     uξVec = reshape(uξ, nPts, 1)
     uσVec = reshape(uσ, nPts, 1)
         
-    # define function to compute advection RHS (to be altered each timestep)
-    fAdvRHS(bVec, t) = 0
-
     # main loop
     for i=1:nSteps
         t += Δt
@@ -151,15 +148,15 @@ function evolve(tFinalDays)
         # implicit euler diffusion
         diffRHS = bVec + diffVec*Δt
 
-        # RHS function (note the parentheses here to allow for sparse matrices to work first)
         if ξVariation
+            # RHS function (note the parentheses here to allow for sparse matrices to work first)
             fAdvRHS(bVec, t) = -(uξVec.*(ξDerivativeMat*bVec) + uσVec.*(σDerivativeMat*bVec) + N^2*uξVec.*HxVec.*σσVec + N^2*uσVec.*HVec)
-        else
-            fAdvRHS(bVec, t) = -N^2*uξVec.*HxVec.*σσVec
-        end
 
-        # explicit timestep for advection
-        advRHS = RK4(t, Δt, bVec, fAdvRHS)
+            # explicit timestep for advection
+            advRHS = RK4(t, Δt, bVec, fAdvRHS)
+        else
+            advRHS = -Δt*N^2*uξVec.*HxVec.*σσVec
+        end
 
         # sum the two
         evolutionRHS = diffRHS + advRHS
