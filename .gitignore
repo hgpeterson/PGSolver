@@ -8,6 +8,7 @@
 # ignore images
 *.png
 *.pdf
+*.svg
 
 # ignore swap files
 *.swp

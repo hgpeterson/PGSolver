@@ -4,7 +4,7 @@ plt.style.use("~/paper_plots.mplstyle")
 close("all")
 pygui(false)
 
-include("../../myJuliaLib.jl")
+include("../myJuliaLib.jl")
 include("setParams.jl")
 include("terrainFollowing.jl")
 include("plottingLib.jl")
@@ -22,19 +22,22 @@ include("evolution.jl")
 #= end =# 
 #= println("Done.") =#
 
-#= b = evolve(1000) =#
-
+b = evolve(5000)
 
 ################################################################################
 # plots
 ################################################################################
 
-#= path = "" =#
-#= dfiles = string.(path, ["checkpoint1000.h5", "checkpoint2000.h5", "checkpoint3000.h5", "checkpoint4000.h5", "checkpoint5000.h5"]) =#
-#= profilePlot(dfiles, 1) =#
+path = ""
+dfiles = string.(path, ["checkpoint1000.h5", "checkpoint2000.h5", "checkpoint3000.h5", "checkpoint4000.h5", "checkpoint5000.h5"])
+profilePlot(dfiles, 1)
 
-include("talkPlots.jl")
-folder = "/home/hpeter/Documents/ResearchCallies/rapid_adjustment/sims/sim008/"
-#= folder = "/home/hpeter/Documents/ResearchCallies/rapid_adjustment/sims/sim009/" =#
-uAnimation(folder)
+#= include("talkPlots.jl") =#
+#= folder = "/home/hpeter/Documents/ResearchCallies/rapid_adjustment/sims/sim008/" # bi κ =#
+#= folder = "/home/hpeter/Documents/ResearchCallies/rapid_adjustment/sims/sim009/" # const κ =#
+#= uAnimation(folder) =#
 #= vAnimation(folder) =#
+#= idealRidge() =#
+#= uBalance(folder) =#
+#= uvRidge(folder) =#
+#= uvAnimation(folder) =#

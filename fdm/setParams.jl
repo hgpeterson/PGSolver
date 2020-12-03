@@ -1,16 +1,14 @@
 # parameters (as in RC20)
 L = 2e6
 H0 = 2e3
-Pr = 1e0
+Pr = 1e1
 f = -5.5e-5
 N = 1e-3
 
 # turn on/off variations in ξ
-#= ξVariation = false =#
 ξVariation = true
 
 # set U = 0 or compute U at each time step?
-#= symmetry = false =#
 symmetry = true
 
 # topography
@@ -47,8 +45,7 @@ cosθ = @. 1/sqrt(1 + Hx(ξξ)^2)
 κ0 = 6e-5
 κ1 = 2e-3
 h = 200
-#= bottomIntense = true =#
-bottomIntense = false
+bottomIntense = true
 if bottomIntense
     κ = @. κ0 + κ1*exp(-(z + H(x))/h)
 else
@@ -57,7 +54,6 @@ end
 
 # timestepping
 Δt = 10*86400
-#= adaptiveTimestep = true =#
 adaptiveTimestep = false
 
 """

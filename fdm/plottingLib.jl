@@ -58,6 +58,10 @@ function ridgePlot(field, b, titleString, cbarLabel; vext=nothing, cmap="RdBu_r"
     ax.set_xlabel(L"$x$ (km)")
     ax.set_ylabel(L"$z$ (m)")
 
+    # no spines
+    ax.spines["left"].set_visible(false)
+    ax.spines["bottom"].set_visible(false)
+
     tight_layout()
     
     return ax

@@ -103,8 +103,8 @@ function evolve(tFinalDays)
     # timestep
     nSteps = Int64(tFinalDays*86400/Δt)
     nStepsInvert = 1
-    nDaysPlot = 500
-    nDaysSave = 10
+    nDaysPlot = 1000
+    nDaysSave = 1000
     nStepsPlot = Int64(nDaysPlot*86400/Δt)
     nStepsSave = Int64(nDaysSave*86400/Δt)
 
@@ -128,7 +128,7 @@ function evolve(tFinalDays)
     t = 0
     b = zeros(nξ, nσ)
     chi, uξ, uη, uσ, U = invert(b)
-    saveCheckpoint(b, chi, uξ, uη, uσ, U, t)
+    saveCheckpointTF(b, chi, uξ, uη, uσ, U, t)
     chiEkman = getChiEkman(b)
     
     # plot initial state of all zeros and no flow
@@ -207,7 +207,7 @@ function evolve(tFinalDays)
             plotCurrentState(t, chi, chiEkman, uξ, uη, uσ, b, iImg)
         end
         if i % nStepsSave == 0
-            saveCheckpoint(b, chi, uξ, uη, uσ, U, t)
+            saveCheckpointTF(b, chi, uξ, uη, uσ, U, t)
         end
     end
 
