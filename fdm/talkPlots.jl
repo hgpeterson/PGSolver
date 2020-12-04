@@ -82,8 +82,8 @@ end
 
 function uvAnimation(folder)
     ix = 1
-    #= tDays = 0:10:1000 =#
-    tDays = 1000
+    tDays = 0:10:1000
+    #= tDays = 1000 =#
     for tDay in tDays
         # setup plot
         fig, ax = subplots(1, 2, figsize=(6.5, 6.5/1.62/2))
@@ -119,8 +119,8 @@ function uvAnimation(folder)
 
         ax[1].legend(loc="upper right")
         tight_layout()
-        #= fname = @sprintf("uvProfiles%05d.png", tDay) =#
-        fname = @sprintf("uvProfiles%05d.pdf", tDay)
+        fname = @sprintf("uvProfiles%04d.png", tDay)
+        #= fname = @sprintf("uvProfiles%04d.pdf", tDay) =#
         savefig(fname, dpi=200)
         println(fname)
         close()
@@ -190,4 +190,136 @@ function uvRidge(folder)
     ridgePlot(v, b, "along-ridge velocity", L"$v$ (m s$^{-1}$)")
     savefig("v1000.pdf")
     close("all")
+end
+
+function uvPrScaling(folder)
+    ix = 1
+    tDay = 1000
+    Prs = [1, 10, 100, 1000]
+    #= lss = ["-", "--", "-.", ":"] =#
+    alphas = [1.0, 0.75, 0.5, 0.25]
+
+    # setup plot
+    fig, ax = subplots(1, 2, figsize=(6.5, 6.5/1.62/2))
+    ax[1].set_xlabel(L"cross-slope velocity, $u$ (m s$^{-1}$)")
+    ax[1].set_ylabel(L"$z$ (m)")
+    ax[1].set_xlim([-0.0005, 0.0035])
+    ax[1].set_ylim([z[ix, 1], z[ix, 1] + 200])
+    ax[1].set_title(string(L"$t = $", tDay, " days"))
+    ax[2].set_xlabel(L"along-slope velocity, $v$ (m s$^{-1}$)")
+    ax[2].set_ylabel(L"$z$ (m)")
+    ax[2].set_xlim([-0.015, 0.015])
+    ax[2].set_title(string(L"$t = $", tDay, " days"))
+
+    # loop
+    for i=1:size(Prs, 1)
+        σ = Prs[i]
+        ls = "-"
+        alpha = alphas[i]
+
+        # full 2D solution
+        b, chi, uξ, uη, uσ, U, t, L, H0, Pr, f, N, symmetry, ξVariation, κ = loadCheckpointTF(string(folder, "full2D/Pr", σ, "/checkpoint", tDay, ".h5"))
+        u, v, w = transformFromTF(uξ, uη, uσ)
+        ax[1].plot(u[ix, :], z[ix, :], c="tab:blue", ls=ls, label="full 2D", alpha=alpha)
+        ax[2].plot(v[ix, :], z[ix, :], c="tab:blue", ls=ls, label="full 2D", alpha=alpha)
+
+        # canonical 1D solution
+        b, chi, û, v, U, t, L, H0, Pr, f, N, symmetry, κ = loadCheckpointRot(string(folder, "canonical1D/Pr", σ, "/checkpoint", tDay, ".h5"))
+        u, w = rotate(û)
+        ax[1].plot(u[ix, :], z[ix, :], c="tab:orange", ls=ls, label="canonical 1D", alpha=alpha)
+        ax[2].plot(v[ix, :], z[ix, :], c="tab:orange", ls=ls, label="canonical 1D", alpha=alpha)
+
+        # fixed 1D solution
+        b, chi, û, v, U, t, L, H0, Pr, f, N, symmetry, κ = loadCheckpointRot(string(folder, "fixed1D/Pr", σ, "/checkpoint", tDay, ".h5"))
+        u, w = rotate(û)
+        ax[1].plot(u[ix, :], z[ix, :], c="k", ls="--", label="fixed 1D", alpha=alpha)
+        ax[2].plot(v[ix, :], z[ix, :], c="k", ls="--", label="fixed 1D", alpha=alpha)
+
+        if i == 1
+            ax[1].legend(loc="upper right")
+        end
+    end
+    tight_layout()
+    fname = "uvPrScaling.pdf"
+    savefig(fname)
+    println(fname)
+    close()
+end
+
+function BzChiPrScaling(folder)
+    ix = 1
+    tDay = 1000
+    Prs = [1, 10, 100, 1000]
+    #= lss = ["-", "--", "-.", ":"] =#
+    alphas = [1.0, 0.75, 0.5, 0.25]
+
+    # setup plot
+    fig, ax = subplots(1, 2, figsize=(6.5, 6.5/1.62/2))
+    ax[1].set_xlabel(L"stratification, $B_z$ (s$^{-2}$)")
+    ax[1].set_ylabel(L"$z$ (m)")
+    #= ax[1].set_xlim([-0.0005, 0.0035]) =#
+    ax[1].set_title(string(L"$t = $", tDay, " days"))
+    ax[1].ticklabel_format(style="sci", scilimits=(-4, 4))
+    ax[2].set_xlabel(L"streamfunction, $\chi$ (m$^2$ s$^{-1}$)")
+    ax[2].set_ylabel(L"$z$ (m)")
+    ax[2].set_xlim([-0.02, 0.18])
+    ax[2].set_title(string(L"$t = $", tDay, " days"))
+
+    # loop
+    for i=1:size(Prs, 1)
+        σ = Prs[i]
+        ls = "-"
+        alpha = alphas[i]
+
+        # full 2D solution
+        b, chi, uξ, uη, uσ, U, t, L, H0, Pr, f, N, symmetry, ξVariation, κ = loadCheckpointTF(string(folder, "full2D/Pr", σ, "/checkpoint", tDay, ".h5"))
+        Bz = N^2 .+ zDerivativeTF(b)
+        ax[1].plot(Bz[ix, :], z[ix, :], c="tab:blue", ls=ls, label="full 2D", alpha=alpha)
+        ax[2].plot(chi[ix, :], z[ix, :], c="tab:blue", ls=ls, label="full 2D", alpha=alpha)
+
+        # canonical 1D solution
+        b, chi, û, v, U, t, L, H0, Pr, f, N, symmetry, κ = loadCheckpointRot(string(folder, "canonical1D/Pr", σ, "/checkpoint", tDay, ".h5"))
+        Bz = N^2*cosθ[ix, :] .+ differentiate(b[ix, :], z[ix, :].*cosθ[ix, :])
+        ax[1].plot(Bz, z[ix, :], c="tab:orange", ls=ls, label="canonical 1D", alpha=alpha)
+        ax[2].plot(chi[ix, :], z[ix, :], c="tab:orange", ls=ls, label="canonical 1D", alpha=alpha)
+
+        # fixed 1D solution
+        b, chi, û, v, U, t, L, H0, Pr, f, N, symmetry, κ = loadCheckpointRot(string(folder, "fixed1D/Pr", σ, "/checkpoint", tDay, ".h5"))
+        Bz = N^2*cosθ[ix, :] .+ differentiate(b[ix, :], z[ix, :].*cosθ[ix, :])
+        ax[1].plot(Bz, z[ix, :], c="k", ls="--", label="fixed 1D", alpha=alpha)
+        ax[2].plot(chi[ix, :], z[ix, :], c="k", ls="--", label="fixed 1D", alpha=alpha)
+
+        if i == 1
+            ax[1].legend(loc="upper left")
+        end
+    end
+    tight_layout()
+    fname = "BzChiPrScaling.pdf"
+    savefig(fname)
+    println(fname)
+    close()
+end
+
+function pressureRidgePlots(dfile)
+    # read
+    b, chi, uξ, uη, uσ, U, t, L, H0, Pr, f, N, symmetry, ξVariation, κ = loadCheckpointTF(dfile)
+
+    # compute p_x
+    u, v, w = transformFromTF(uξ, uη, uσ)
+    px = f*v + zDerivativeTF(Pr*κ.*zDerivativeTF(u)) 
+
+    # compute p
+    p = zeros(size(b))
+    p[:, end] = cumtrapz(px[:, end], ξ) # assume p = 0 at top left
+    for i=1:nξ
+        hydrostatic = H(ξ[i])*cumtrapz(b[i, :], σ)
+        p[i, :] = hydrostatic .+ (p[i, end] - hydrostatic[end]) # integration constant from int(px)
+    end
+
+    ridgePlot(p, b, "pressure", L"$p$ (m$^2$ s$^{-2}$)"; cmap="viridis")
+    savefig("p1000.pdf")
+    close()
+    ridgePlot(px, b, "pressure gradient", L"$p_x$ (m s$^{-2}$)")
+    savefig("px1000.pdf")
+    close()
 end

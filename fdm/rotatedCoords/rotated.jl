@@ -9,10 +9,10 @@ Compute dẑ(field) over 2D domain.
 """
 function ẑDerivative(field)
     # allocate
-    fẑ = zeros(nx, nz)
+    fẑ = zeros(size(field))
 
     # dẑ(field)
-    for i=1:nx
+    for i=1:size(field, 1)
         fẑ[i, :] .+= differentiate(field[i, :], ẑ[i, :])
     end
 

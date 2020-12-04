@@ -87,7 +87,7 @@ function evolve(tFinalDays)
     nSteps = Int64(tFinalDays*86400/Δt)
     nStepsInvert = 1
     nDaysPlot = 10000
-    nDaysSave = 1000
+    nDaysSave = 10
     nStepsPlot = Int64(nDaysPlot*86400/Δt)
     nStepsSave = Int64(nDaysSave*86400/Δt)
 
