@@ -1,4 +1,4 @@
-using PyPlot, PyCall, Printf, SparseArrays, LinearAlgebra, HDF5
+using PyPlot, PyCall, Printf, SparseArrays, LinearAlgebra, HDF5, Dierckx
 
 plt.style.use("~/paper_plots.mplstyle")
 close("all")
@@ -34,14 +34,15 @@ include("evolution.jl")
 
 include("talkPlots.jl")
 #= folder = "/home/hpeter/Documents/ResearchCallies/rapid_adjustment/sims/sim008/" # bi κ =#
-#= folder = "/home/hpeter/Documents/ResearchCallies/rapid_adjustment/sims/sim009/" # const κ =#
-folder = "/home/hpeter/Documents/ResearchCallies/rapid_adjustment/sims/sim011/" # Pr
-#= uAnimation(folder) =#
-#= vAnimation(folder) =#
-#= idealRidge() =#
-#= uBalance(folder) =#
-#= uvRidge(folder) =#
+folder = "/home/hpeter/Documents/ResearchCallies/rapid_adjustment/sims/sim009/" # const κ
+#= folder = "/home/hpeter/Documents/ResearchCallies/rapid_adjustment/sims/sim011/" # Pr (bi κ) =#
 #= uvAnimation(folder) =#
+#= idealRidge() =#
+uBalance(folder)
+#= ridge(folder) =#
 #= uvPrScaling(folder) =#
 #= BzChiPrScaling(folder) =#
-pressureRidgePlots(string(folder, "full2D/Pr1/checkpoint1000.h5"))
+#= pressureRidgePlots(string(folder, "full2D/Pr1/checkpoint1000.h5")) =#
+#= profiles2DvsFixed(folder) =#
+#= BzChi2DvsFixed(folder) =#
+#= uv2DvsFixed(folder) =#

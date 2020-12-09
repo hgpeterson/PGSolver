@@ -6,7 +6,7 @@ pl = pyimport("matplotlib.pylab")
 inset_locator = pyimport("mpl_toolkits.axes_grid1.inset_locator")
 
 """
-    ax = ridgePlot(field, b, titleString, cbarLabel; vext)
+    ax = ridgePlot(field, b, titleString, cbarLabel; ax, vext, cmap)
 
 Create 2D plot of `field` with isopycnals given by the buoyancy perturbation `b`.
 Set the title to `titleString` and colorbar label to `cbarLabel`. Return the axis 
@@ -14,11 +14,13 @@ handle `ax`.
 
 Optional: set the vmin/vmax manually with vext.
 """
-function ridgePlot(field, b, titleString, cbarLabel; vext=nothing, cmap="RdBu_r")
+function ridgePlot(field, b, titleString, cbarLabel; ax=nothing, vext=nothing, cmap="RdBu_r")
     # full buoyancy for isopycnals
     B = N^2*z + b 
 
-    fig, ax = subplots(1)
+    if ax == nothing
+        fig, ax = subplots(1)
+    end
 
     # set min and max
     if vext == nothing
@@ -57,6 +59,7 @@ function ridgePlot(field, b, titleString, cbarLabel; vext=nothing, cmap="RdBu_r"
     ax.set_title(titleString)
     ax.set_xlabel(L"$x$ (km)")
     ax.set_ylabel(L"$z$ (m)")
+    ax.set_xticks([0, 500, 1000, 1500, 2000])
 
     # no spines
     ax.spines["left"].set_visible(false)
