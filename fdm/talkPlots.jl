@@ -1,6 +1,7 @@
 # for loading rotated data
 include("rotatedCoords/rotated.jl")
 pl = pyimport("matplotlib.pylab")
+inset_locator = pyimport("mpl_toolkits.axes_grid1.inset_locator")
 
 function canonicalSteadyTheory(z, κ0, κ1, h, N, f, θ, Pr)
     S = N^2*tan(θ)^2/f^2
@@ -53,6 +54,70 @@ function uvAnimation(folder)
         tight_layout()
         fname = @sprintf("uvProfiles%04d.png", tDay)
         #= fname = @sprintf("uvProfiles%04d.pdf", tDay) =#
+        savefig(fname, dpi=200)
+        println(fname)
+        close()
+    end
+end
+
+function chivAnimation(folder)
+    ix = 1
+    tDays = 0:10:1000
+    #= tDays = 1000 =#
+    for tDay in tDays
+        # setup plot
+        fig, ax = subplots(1, 2, figsize=(6.5, 6.5/1.62/2), sharey=true)
+
+        #= ax[1].set_xlabel(L"streamfunction, $\chi$ (m$^2$ s$^{-1}$)") =#
+        ax[1].set_xlabel(L"streamfunction, $\chi$ (rescaled)")
+        ax[1].set_ylabel(L"$z$ (m)")
+        #= ax[1].set_xlim([-0.005, 0.1]) =#
+        ax[1].set_xlim([-0.1, 1.1])
+        ax[1].set_xticks([0])
+        ax[1].set_title(string(L"$t = $", tDay, " days"))
+
+        ax[2].set_xlabel(L"along-slope velocity, $v$ (m s$^{-1}$)")
+        ax[2].set_xlim([-0.03, 0.03])
+        ax[2].set_title(string(L"$t = $", tDay, " days"))
+
+        # zero line
+        #= ax[1].axvline(0, lw=0.5, c="k", ls="-") =#
+
+        # full 2D solution
+        b, chi, uξ, uη, uσ, U, t, L, H0, Pr, f, N, symmetry, ξVariation, κ = loadCheckpointTF(string(folder, "full2D/checkpoint", tDay, ".h5"))
+        u, v, w = transformFromTF(uξ, uη, uσ)
+        #= ax[1].plot(chi[ix, :], z[ix, :], label="full 2D") =#
+        c = maximum(chi[ix, :])
+        if c == 0
+            c = 1
+        end
+        ax[1].plot(chi[ix, :]/c, z[ix, :], label="full 2D")
+        ax[2].plot(v[ix, :], z[ix, :], label="full 2D")
+
+        # canonical 1D solution
+        b, chi, û, v, U, t, L, H0, Pr, f, N, symmetry, κ = loadCheckpointRot(string(folder, "canonical1D/checkpoint", tDay, ".h5"))
+        #= ax[1].plot(chi[ix, :], z[ix, :], label="canonical 1D") =#
+        c = maximum(chi[ix, :])
+        if c == 0
+            c = 1
+        end
+        ax[1].plot(chi[ix, :]/c, z[ix, :], label="canonical 1D")
+        ax[2].plot(v[ix, :], z[ix, :], label="canonical 1D")
+
+        # fixed 1D solution
+        b, chi, û, v, U, t, L, H0, Pr, f, N, symmetry, κ = loadCheckpointRot(string(folder, "fixed1D/checkpoint", tDay, ".h5"))
+        #= ax[1].plot(chi[ix, :], z[ix, :], "k:", label="fixed 1D") =#
+        c = maximum(chi[ix, :])
+        if c == 0
+            c = 1
+        end
+        ax[1].plot(chi[ix, :]/c, z[ix, :], "k:", label="fixed 1D")
+        ax[2].plot(v[ix, :], z[ix, :], "k:", label="fixed 1D")
+
+        ax[2].legend(loc="upper right")
+        tight_layout()
+        fname = @sprintf("chivProfilesRescaled%04d.png", tDay)
+        #= fname = @sprintf("chivProfilesRescaled%04d.pdf", tDay) =#
         savefig(fname, dpi=200)
         println(fname)
         close()
@@ -119,6 +184,32 @@ function uBalance(folder)
     tight_layout()
     savefig("ubalance.pdf")
     #= savefig("ubalance.svg", transparent=true) =#
+end
+
+function chiBalance(folder)
+    iξ = 1
+
+    fig, ax = subplots(1)
+
+    # full 2D
+    b, chi, uξ, uη, uσ, U, t, L, H0, Pr, f, N, symmetry, ξVariation, κ = loadCheckpointTF(string(folder, "full2D/checkpoint1000.h5"))
+    ax.plot(chi[iξ, :]/maximum(chi[iξ, :]), z[iξ, :], label="full 2D")
+
+    b, chi, û, v, U, t, L, H0, Pr, f, N, symmetry, κ = loadCheckpointRot(string(folder, "canonical1D/checkpoint1000.h5"))
+    ax.plot(chi[iξ, :]/maximum(chi[iξ, :]), z[iξ, :], label="canonical 1D")
+
+    ax.annotate(L"$U = \chi(0) = 0$", xy=(0.0, 0.99), xytext=(0.2, 0.95), xycoords="axes fraction", arrowprops=Dict("arrowstyle" => "->"))
+    ax.annotate("far-field downwelling", (0.2, 0.2), rotation=-20, xycoords="axes fraction")
+    ax.annotate(L"$\kappa =$ const.", (0.1, 0.1), xycoords="axes fraction")
+
+    ax.set_xlabel(L"$\chi$ (rescaled)")
+    ax.set_xticks([0, U/maximum(chi[iξ, :])])
+    ax.set_xticklabels([0, L"$\hat{U} > 0$"])
+    ax.set_xlim([0, 1.1])
+    ax.set_ylabel(L"$z$ (m)")
+    ax.legend(loc=(0.45, 0.6))
+    tight_layout()
+    savefig("chibalance.pdf")
 end
 
 function ridge(folder)

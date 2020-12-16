@@ -229,7 +229,7 @@ function getChiEkman(b)
     chi_B_top = @. -exp(z/δ)*chi_I_top*cos(z/δ)
 
     # full solution (use full κ with assumption that its variation is larger than δ)
-    chiEkman = @. κ/f^2*(chi_I + chi_B_bot + chi_B_top)
+    chiEkman = @. Pr*κ/f^2*(chi_I + chi_B_bot + chi_B_top)
 
     return chiEkman
 end
