@@ -143,7 +143,6 @@ function evolve(tFinalDays)
 
     # timestep
     nSteps = Int64(tFinalDays*86400/Δt)
-    nDaysSave = 1000
     nStepsSave = Int64(nDaysSave*86400/Δt)
 
     # for flattening for matrix mult
@@ -162,8 +161,14 @@ function evolve(tFinalDays)
     t = 0
     sol = zeros(nPts)
     # start with far-field geostrophic flow
-    v0 = -0.01        
     sol[umap[2, :]] .= v0
+    sol[nPts] = f*v0
+    # save initial condition
+    û = sol[umap[1, :]]
+    v = sol[umap[2, :]]
+    b = sol[umap[3, :]]
+    Px = sol[nPts]
+    saveCheckpointSpinDown(û, v, b, Px, t)
 
     # main loop
     for i=1:nSteps
@@ -191,8 +196,9 @@ function evolve(tFinalDays)
         sol = LHS\RHSVec
 
         # log
-        println(@sprintf("t = %.2f days (i = %d)", tDays, i))
         if i % nStepsSave == 0
+            println(@sprintf("t = %.2f days (i = %d)", tDays, i))
+
             # gather solution
             û = sol[umap[1, :]]
             v = sol[umap[2, :]]

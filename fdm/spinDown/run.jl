@@ -14,12 +14,16 @@ include("rotated.jl")
 # run evolution integrations
 ################################################################################
 
-sol = evolve(5000)
+sol = evolve(10)
 
 ################################################################################
 # plots
 ################################################################################
 
 path = ""
-dfiles = string.(path, ["checkpoint1000.h5", "checkpoint2000.h5", "checkpoint3000.h5", "checkpoint4000.h5", "checkpoint5000.h5"])
+#= tDays = 0:1000:5000 =#
+#= tDays = 0:100:500 =#
+#= tDays = 0:10:50 =#
+tDays = 0:2:10
+dfiles = string.(path, "checkpoint", tDays, ".h5")
 profilePlot(dfiles)

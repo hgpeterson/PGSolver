@@ -37,10 +37,12 @@ function profilePlot(datafiles)
     axins21.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
 
     # color map
-    colors = pl.cm.viridis(range(1, 0, length=5))
+    colors = pl.cm.viridis(range(1, 0, length=size(datafiles, 1)-1))
 
     # zoomed z
-    ax[2].set_ylim([ẑ[1], ẑ[1] + 200])
+    ax[1].set_ylim([ẑ[1], ẑ[1] + 100])
+    ax[2].set_ylim([ẑ[1], ẑ[1] + 100])
+    ax[3].set_ylim([ẑ[1], ẑ[1] + 100])
 
     # plot data from `datafiles`
     for i=1:size(datafiles, 1)
@@ -52,7 +54,11 @@ function profilePlot(datafiles)
 
         # colors and labels
         label = string("Day ", Int64(round(t/86400)))
-        c = colors[i, :]
+        if i == 1
+            c = "k"
+        else
+            c = colors[i-1, :]
+        end
 
         # plot
         ax[1].plot(Bẑ, ẑ, c=c, label=label)
@@ -65,4 +71,5 @@ function profilePlot(datafiles)
     ax[1].legend()
 
     savefig("profiles.png", bbox="inches")
+    close()
 end
