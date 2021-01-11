@@ -2,6 +2,7 @@
 include("rotatedCoords/rotated.jl")
 pl = pyimport("matplotlib.pylab")
 inset_locator = pyimport("mpl_toolkits.axes_grid1.inset_locator")
+lines = pyimport("matplotlib.lines")
 
 function canonicalSteadyTheory(z, κ0, κ1, h, N, f, θ, Pr)
     S = N^2*tan(θ)^2/f^2
@@ -259,24 +260,32 @@ function ridge(folder)
     close()
 end
 
-function profiles2DvsFixed(folder)
+function profiles2Dvs1D(folder)
     ix = 1
     tDays = 1000:1000:5000
     #= σ = 1 # prandtl number =#
-    #= σ = 1000 =# 
-    σ = 100 
+    σ = 200 
 
-    # setup plot
-    fig, ax = subplots(2, 2, figsize=(6.5, 6.5/1.62))
-    ax[1, 1].set_xlabel(L"stratification, $B_z$ (s$^{-2}$)")
+    # init plot
+    fig, ax = subplots(3, 2, figsize=(3.404*2, 3*3.404/1.62), sharey=true)
+
+    ax[1, 1].set_xlabel(L"streamfunction, $\chi$ (m$^2$ s$^{-1}$)")
     ax[1, 1].set_ylabel(L"$z$ (m)")
+    ax[1, 1].set_title("canonical 1D")
+
     ax[1, 2].set_xlabel(L"streamfunction, $\chi$ (m$^2$ s$^{-1}$)")
-    ax[1, 2].set_ylabel(L"$z$ (m)")
-    ax[2, 1].set_xlabel(L"cross-slope velocity, $u$ (m s$^{-1}$)")
+    ax[1, 2].set_title("full 2D")
+
+    ax[2, 1].set_xlabel(L"along-ridge flow, $v$ (m s$^{-1}$)")
     ax[2, 1].set_ylabel(L"$z$ (m)")
-    #= ax[2, 1].set_ylim([z[ix, 1], z[ix, 1] + 200]) =#
-    ax[2, 2].set_xlabel(L"along-slope velocity, $v$ (m s$^{-1}$)")
-    ax[2, 2].set_ylabel(L"$z$ (m)")
+
+    ax[2, 2].set_xlabel(L"along-ridge flow, $v$ (m s$^{-1}$)")
+
+    ax[3, 1].set_xlabel(L"stratification, $B_z$ (s$^{-2}$)")
+    ax[3, 1].set_ylabel(L"$z$ (m)")
+
+    ax[3, 2].set_xlabel(L"stratification, $B_z$ (s$^{-2}$)")
+
     for a in ax
         a.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
     end
@@ -284,33 +293,49 @@ function profiles2DvsFixed(folder)
     # color map
     colors = pl.cm.viridis(range(1, 0, length=5))
 
-    # loop
+    # plot data from folder
     for i=1:size(tDays, 1)
         tDay = tDays[i]
+
+        # canonical 2D solution
+        b, chi, û, v, U, t, L, H0, Pr, f, N, symmetry, κ = loadCheckpointRot(string(folder, "canonical1D/Pr", σ, "/checkpoint", tDay, ".h5"))
+        u, w = rotate(û)
+        Bz = N^2*cosθ[ix, :] .+ differentiate(b[ix, :], z[ix, :].*cosθ[ix, :])
+        ax[1, 1].plot(chi[ix, :], z[ix, :], c=colors[i, :], ls="-", label=string("Day ", Int64(tDay)))
+        ax[2, 1].plot(v[ix, :],   z[ix, :], c=colors[i, :], ls="-")
+        ax[3, 1].plot(Bz,         z[ix, :], c=colors[i, :], ls="-")
         
         # full 2D solution
         b, chi, uξ, uη, uσ, U, t, L, H0, Pr, f, N, symmetry, ξVariation, κ = loadCheckpointTF(string(folder, "full2D/Pr", σ, "/checkpoint", tDay, ".h5"))
         u, v, w = transformFromTF(uξ, uη, uσ)
         Bz = N^2 .+ zDerivativeTF(b)
-        ax[1, 1].plot(Bz[ix, :],  z[ix, :], c=colors[i, :], ls="-", label=string("Day ", Int64(tDay)))
         ax[1, 2].plot(chi[ix, :], z[ix, :], c=colors[i, :], ls="-")
-        ax[2, 1].plot(u[ix, :],   z[ix, :], c=colors[i, :], ls="-")
         ax[2, 2].plot(v[ix, :],   z[ix, :], c=colors[i, :], ls="-")
+        ax[3, 2].plot(Bz[ix, :],  z[ix, :], c=colors[i, :], ls="-")
 
         # fixed 1D solution
         b, chi, û, v, U, t, L, H0, Pr, f, N, symmetry, κ = loadCheckpointRot(string(folder, "fixed1D/Pr", σ, "/checkpoint", tDay, ".h5"))
         u, w = rotate(û)
         Bz = N^2*cosθ[ix, :] .+ differentiate(b[ix, :], z[ix, :].*cosθ[ix, :])
-        ax[1, 1].plot(Bz,         z[ix, :], c="k", ls=":")
         ax[1, 2].plot(chi[ix, :], z[ix, :], c="k", ls=":")
-        ax[2, 1].plot(u[ix, :],   z[ix, :], c="k", ls=":")
         ax[2, 2].plot(v[ix, :],   z[ix, :], c="k", ls=":")
+        ax[3, 2].plot(Bz,         z[ix, :], c="k", ls=":")
     end
-    ax[1, 1].legend(loc="upper left")
+
+    ax[1, 1].legend(loc="center left")
+    custom_handles = [lines.Line2D([0], [0], c="k", ls=":", lw="1")]
+    custom_labels = ["transport-constrained 1D"]
+    ax[1, 2].legend(custom_handles, custom_labels, loc="center right")
+
+    ax[1, 1].annotate("(a)", (0.06, 0.92), xycoords="axes fraction")
+    ax[1, 2].annotate("(b)", (0.06, 0.92), xycoords="axes fraction")
+    ax[2, 1].annotate("(c)", (0.06, 0.92), xycoords="axes fraction")
+    ax[2, 2].annotate("(d)", (0.06, 0.92), xycoords="axes fraction")
+    ax[3, 1].annotate("(e)", (0.06, 0.92), xycoords="axes fraction")
+    ax[3, 2].annotate("(f)", (0.06, 0.92), xycoords="axes fraction")
+
     tight_layout()
-    fname = "fig2.pdf"
-    savefig(fname)
-    println(fname)
+    savefig(string("profiles2Dvs1D_Pr", σ, ".pdf"))
     close()
 end
 
