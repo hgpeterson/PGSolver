@@ -212,6 +212,28 @@ function chiBalance(folder)
     savefig("chibalance.pdf")
 end
 
+function chiForSketch(folder)
+    iξ = 1
+
+    fig, ax = subplots(1)
+
+    # full 2D
+    b, chi, uξ, uη, uσ, U, t, L, H0, Pr, f, N, symmetry, ξVariation, κ = loadCheckpointTF(string(folder, "full2D/checkpoint1000.h5"))
+    ax.plot(chi[iξ, :]/maximum(chi[iξ, :]), z[iξ, :], "k", label="full 2D")
+
+    b, chi, û, v, U, t, L, H0, Pr, f, N, symmetry, κ = loadCheckpointRot(string(folder, "canonical1D/checkpoint1000.h5"))
+    ax.plot(chi[iξ, :]/maximum(chi[iξ, :]), z[iξ, :], "k", label="canonical 1D")
+
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.spines["left"].set_visible(false)
+    ax.axvline(0, ls="-", lw=0.5, c="k")
+    ax.set_ylim([-H0, 0])
+
+    tight_layout()
+    savefig("chiForSketch.svg", transparent=true)
+end
+
 function ridge(folder)
     # load
     b, chi, uξ, uη, uσ, U, t, L, H0, Pr, f, N, symmetry, ξVariation, κ = loadCheckpointTF(string(folder, "full2D/Pr1/checkpoint1000.h5"))

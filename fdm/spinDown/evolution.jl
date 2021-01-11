@@ -132,18 +132,18 @@ function getLHSandRHS(Δt, A, α, bottomBdy, topBdy)
 end
 
 """
-    sol = evolve(tFinalDays)
+    sol = evolve(tFinal)
 
-Solve 1D equations for `tFinalDays` days.
+Solve 1D equations for `tFinal` seconds.
 """
-function evolve(tFinalDays)
+function evolve(tFinal)
     # grid points
     nVars = 3
     nPts = nVars*nẑ + 1
 
     # timestep
-    nSteps = Int64(tFinalDays*86400/Δt)
-    nStepsSave = Int64(nDaysSave*86400/Δt)
+    nSteps = Int64(round(tFinal/Δt))
+    nStepsSave = Int64(round(tSave/Δt))
 
     # for flattening for matrix mult
     umap = reshape(1:(nPts-1), nVars, nẑ)    
@@ -168,12 +168,13 @@ function evolve(tFinalDays)
     v = sol[umap[2, :]]
     b = sol[umap[3, :]]
     Px = sol[nPts]
-    saveCheckpointSpinDown(û, v, b, Px, t)
+    iSave = 0
+    saveCheckpointSpinDown(û, v, b, Px, t, iSave)
+    iSave += 1
 
     # main loop
     for i=1:nSteps
         t += Δt
-        tDays = t/86400
 
         # right-hand-side as a vector
         RHSVec = RHS*sol + diffVec
@@ -197,7 +198,7 @@ function evolve(tFinalDays)
 
         # log
         if i % nStepsSave == 0
-            println(@sprintf("t = %.2f days (i = %d)", tDays, i))
+            println(@sprintf("t = %.1e s = %.1e days (i = %d)", t, t/86400, i))
 
             # gather solution
             û = sol[umap[1, :]]
@@ -206,7 +207,8 @@ function evolve(tFinalDays)
             Px = sol[nPts]
 
             # save data
-            saveCheckpointSpinDown(û, v, b, Px, t)
+            saveCheckpointSpinDown(û, v, b, Px, t, iSave)
+            iSave += 1
         end
     end
 

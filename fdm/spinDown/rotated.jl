@@ -14,13 +14,12 @@ function rotate(û)
 end
 
 """
-    saveCheckpointSpinDown(û, v, b, Px, t)
+    saveCheckpointSpinDown(û, v, b, Px, t, i)
 
 Save .h5 checkpoint file for state.
 """
-function saveCheckpointSpinDown(û, v, b, Px, t)
-    tDays = t/86400
-    savefile = @sprintf("checkpoint%d.h5", tDays)
+function saveCheckpointSpinDown(û, v, b, Px, t, i)
+    savefile = @sprintf("checkpoint%d.h5", i)
     file = h5open(savefile, "w")
     write(file, "û", û)
     write(file, "v", v)

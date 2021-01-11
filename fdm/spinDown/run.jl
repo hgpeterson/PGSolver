@@ -14,16 +14,19 @@ include("rotated.jl")
 # run evolution integrations
 ################################################################################
 
-sol = evolve(10)
+#= sol = evolve(5*τ) =#
 
 ################################################################################
 # plots
 ################################################################################
 
-path = ""
-#= tDays = 0:1000:5000 =#
-#= tDays = 0:100:500 =#
-#= tDays = 0:10:50 =#
-tDays = 0:2:10
-dfiles = string.(path, "checkpoint", tDays, ".h5")
-profilePlot(dfiles)
+#= path = "" =#
+#= iSaves = 0:5 =#
+#= dfiles = string.(path, "checkpoint", iSaves, ".h5") =#
+#= profilePlot(dfiles) =#
+
+#= MR91plot(dfiles) =#
+
+#= folder = "/home/hpeter/ResearchCallies/rapid_adjustment/sims/sim014/" # small S =#
+folder = "/home/hpeter/ResearchCallies/rapid_adjustment/sims/sim015/" # larger S
+canonicalVsNoTransport(folder)

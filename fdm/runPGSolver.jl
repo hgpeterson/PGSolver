@@ -37,10 +37,11 @@ include("talkPlots.jl")
 folder = "/home/hpeter/Documents/ResearchCallies/rapid_adjustment/sims/sim009/" # const κ
 #= folder = "/home/hpeter/Documents/ResearchCallies/rapid_adjustment/sims/sim011/" # Pr (bi κ) =#
 #= uvAnimation(folder) =#
-chivAnimation(folder)
+#= chivAnimation(folder) =#
 #= idealRidge() =#
 #= uBalance(folder) =#
 #= chiBalance(folder) =#
+chiForSketch(folder)
 #= ridge(folder) =#
 #= uvPrScaling(folder) =#
 #= BzChiPrScaling(folder) =#
