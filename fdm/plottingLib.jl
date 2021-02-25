@@ -41,7 +41,7 @@ function ridgePlot(field, b, titleString, cbarLabel; ax=nothing, vext=nothing, c
     end
 
     # 2D plot
-    img = ax.pcolormesh(x/1000, z, field, cmap=cmap, vmin=vmin, vmax=vmax, rasterized=true)
+    img = ax.pcolormesh(x/1000, z, field, cmap=cmap, vmin=vmin, vmax=vmax, rasterized=true, shading="auto")
     cb = colorbar(img, ax=ax, label=cbarLabel, extend=extend)
     cb.ax.ticklabel_format(style="sci", scilimits=(-3, 3))
 
@@ -59,7 +59,7 @@ function ridgePlot(field, b, titleString, cbarLabel; ax=nothing, vext=nothing, c
     ax.set_title(titleString)
     ax.set_xlabel(L"$x$ (km)")
     ax.set_ylabel(L"$z$ (m)")
-    ax.set_xticks([0, 500, 1000, 1500, 2000])
+    #= ax.set_xticks([0, 500, 1000, 1500, 2000]) =#
 
     # no spines
     ax.spines["left"].set_visible(false)
@@ -118,6 +118,9 @@ function profilePlot(datafiles, iξ)
     colors = pl.cm.viridis(range(1, 0, length=5))
 
     # zoomed z
+    #= for a in ax =#
+    #=     a.set_ylim([z[iξ, 1], z[iξ, 1] + 2000]) =#
+    #= end =#
     ax[2, 1].set_ylim([z[iξ, 1], z[iξ, 1] + 200])
 
     # plot data from `datafiles`
@@ -148,8 +151,9 @@ function profilePlot(datafiles, iξ)
 
     ax[2, 3].legend()
 
-    savefig("profiles.png", bbox="inches")
+    savefig("profiles.png")
 end
+
 """
     advectionPlot(datafiles, iξ)
 

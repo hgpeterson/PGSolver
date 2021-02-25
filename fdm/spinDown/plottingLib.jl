@@ -41,11 +41,13 @@ function profilePlot(datafiles)
 
     # zoomed z
     ax[1].set_ylim([0, 100])
+    ax[2].set_xlim([-2e-5, 2e-5])
 
     # plot data from `datafiles`
     for i=1:size(datafiles, 1)
         # load
         û, v, b, Px, t, L, H0, Pr, f, N, θ, canonical, bottomIntense, κ, κ0, κ1, h, α = loadCheckpointSpinDown(datafiles[i])
+        #= println(trapz(û, ẑ)) =#
 
         # stratification
         Bẑ = N^2*cos(θ) .+ differentiate(b, ẑ)
@@ -68,7 +70,7 @@ function profilePlot(datafiles)
 
     ax[1].legend()
 
-    savefig("profiles.png", bbox="inches")
+    savefig("profiles.png")
     close()
 end
 
@@ -204,12 +206,12 @@ function canonicalVsNoTransport(folder)
     ax[3, 1].annotate("(e)", (0.06, 0.92), xycoords="axes fraction")
     ax[3, 2].annotate("(f)", (0.06, 0.92), xycoords="axes fraction")
 
-    ax[1, 2].annotate(string(L"$S \approx $", @sprintf("%1.1e", S)), (0.8, 0.6), xycoords="axes fraction", ha="right", size=10)
+    ax[1, 2].annotate(string(L"$S \approx $", @sprintf("%1.1e", S)),  (0.6, 0.6), xycoords="axes fraction", size=10)
+    ax[1, 2].annotate(string(L"$H = $", @sprintf("%1d km", H0/1000)), (0.6, 0.5), xycoords="axes fraction", size=10)
 
     #= ax[2, 2].annotate(L"$P_x/f$", xy=(0.18, 0.5), xytext=(0.03, 0.6), xycoords="axes fraction", arrowprops=Dict("arrowstyle" => "->")) =#
 
     tight_layout()
-    #= savefig("small_S.pdf") =#
-    savefig("large_S.pdf")
+    savefig("fig.pdf")
     close()
 end

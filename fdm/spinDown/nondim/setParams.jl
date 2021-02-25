@@ -4,8 +4,8 @@
 #= canonical = true =#
 canonical = false
 
-Ek = 1e-6 
-S = 3.1e-4
+Ek = 1e-8
+S = 1e-2
 Pr = 1e3
 κ1 = 1e-3
 v0 = -1
@@ -21,14 +21,15 @@ h = 0
 τ_S = 1/sqrt(Ek)
 
 # timestep
-Δt = minimum([τ_S, τ_A])/100
+Δt = minimum([τ_S/100, τ_A/100, 10])
 tSave = τ_A
 
 # number of grid points
-nẑ = 2^8
+#= nẑ = 2^7 =#
+nẑ = Int64(ceil(H))
 
-# grid
-ẑ = @. H*(1 - cos(pi*(0:nẑ-1)/(nẑ-1)))/2 # chebyshev (ẑ = 0 is bottom)
+# grid (chebyshev, ẑ = 0 is bottom)
+ẑ = @. H*(1 - cos(pi*(0:nẑ-1)/(nẑ-1)))/2
 
 #= bottomIntense = true =#
 bottomIntense = false

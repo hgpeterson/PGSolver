@@ -10,7 +10,7 @@ inset_locator = pyimport("mpl_toolkits.axes_grid1.inset_locator")
 
 Plot profiles from HDF5 snapshot files the `datafiles` list.
 """
-function profilePlot(datafiles)
+function profilePlot(datafiles; fname="profiles.png")
     # init plot
     fig, ax = subplots(1, 3, figsize=(3.404*3, 3.404/1.62), sharey=true)
 
@@ -66,7 +66,7 @@ function profilePlot(datafiles)
 
     ax[1].legend()
 
-    savefig("profiles.png")
+    savefig(fname)
     close()
 end
 

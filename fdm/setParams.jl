@@ -1,7 +1,5 @@
 # parameters (as in RC20)
-L = 2e6
-H0 = 2e3
-Pr = 2e2
+Pr = 1e0
 f = -5.5e-5
 N = 1e-3
 
@@ -12,9 +10,18 @@ N = 1e-3
 symmetry = true
 
 # topography
+#= L = 2e6 =#
+#= H0 = 2e3 =#
+#= amp =  0.4*H0 =#
+#= H(x) = H0 - amp*sin(2*pi*x/L) =#
+#= Hx(x) = -2*pi/L*amp*cos(2*pi*x/L) =#
+
+L = 1e5
+H0 = 1e3
 amp =  0.4*H0
-H(x) = H0 - amp*sin(2*pi*x/L) # hill
-Hx(x) = -2*pi/L*amp*cos(2*pi*x/L)
+wid = 4.5*H0
+H(x) = H0 + amp*exp(-(x - L/2)^2/(2*wid^2))
+Hx(x) = -amp*(x - L/2)/wid^2*exp(-(x - L/2)^2/(2*wid^2))
 
 # number of grid points
 nξ = 2^8 + 1 
@@ -48,13 +55,15 @@ h = 200
 bottomIntense = true
 if bottomIntense
     κ = @. κ0 + κ1*exp(-(z + H(x))/h)
+    #= κ = @. κ0 + κ1*exp(-(z + H(x) - h)/h) =#
 else
     κ = κ1*ones(nξ, nσ)
 end
 
 # timestepping
 Δt = 10*86400
-adaptiveTimestep = false
+#= adaptiveTimestep = false =#
+adaptiveTimestep = true
 
 """
     log(ofile, text)

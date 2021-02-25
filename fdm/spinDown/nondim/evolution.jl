@@ -142,8 +142,8 @@ function evolve(tFinal)
     nPts = nVars*nẑ + 1
 
     # timestep
-    nSteps = Int64(round(tFinal/Δt))
-    nStepsSave = Int64(round(tSave/Δt))
+    nSteps = Int64(ceil(tFinal/Δt))
+    nStepsSave = Int64(floor(tSave/Δt))
 
     # for flattening for matrix mult
     umap = reshape(1:(nPts-1), nVars, nẑ)    
@@ -211,5 +211,9 @@ function evolve(tFinal)
         end
     end
 
-    return sol
+    û = sol[umap[1, :]]
+    v = sol[umap[2, :]]
+    b = sol[umap[3, :]]
+    Px = sol[nPts]
+    return û, v, b, Px
 end

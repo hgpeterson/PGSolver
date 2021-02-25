@@ -111,6 +111,9 @@ function profilePlot(datafiles, ix)
     colors = pl.cm.viridis(range(1, 0, length=5))
 
     # zoomed z
+    #= for a in ax =#
+    #=     a.set_ylim([z[ix, 1], z[ix, 1] + 2000]) =#
+    #= end =#
     ax[2, 1].set_ylim([z[ix, 1], z[ix, 1] + 200])
 
     # plot data from `datafiles`
@@ -144,7 +147,7 @@ function profilePlot(datafiles, ix)
 
     ax[2, 3].legend()
 
-    savefig("profiles.png", bbox="inches")
+    savefig("profiles.png")
 end
 
 """

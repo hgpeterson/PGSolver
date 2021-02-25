@@ -14,6 +14,7 @@ include("evolution.jl")
 ################################################################################
 # Setup matrices 
 ################################################################################
+
 print("Computing inversion matrices: ")
 inversionLHSs = Array{Any}(undef, nx)
 for i=1:nx
@@ -25,14 +26,13 @@ println("Done.")
 # run evolution integrations
 ################################################################################
 
-#= b = evolve(1000) =#
 b = evolve(5000)
 
 ################################################################################
 # plots
 ################################################################################
 
-#= profilePlot(["checkpoint1000.h5", "checkpoint2000.h5", "checkpoint3000.h5", "checkpoint4000.h5", "checkpoint5000.h5"], 1) =#
+profilePlot(["checkpoint1000.h5", "checkpoint2000.h5", "checkpoint3000.h5", "checkpoint4000.h5", "checkpoint5000.h5"], 1)
 #= advectionProfilePlot(["checkpoint1000.h5", "checkpoint2000.h5", "checkpoint3000.h5", "checkpoint4000.h5", "checkpoint5000.h5"], 1) =#
 
 #= include("talkPlots.jl") =#

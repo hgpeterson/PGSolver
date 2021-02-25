@@ -195,6 +195,7 @@ function invert(b)
 
     # solve
     sol = zeros(nξ, nσ+1)
+    #= @distributed for i=1:nξ =#
     for i=1:nξ
         sol[i, :] = inversionLHSs[i]\inversionRHS[i, :]
     end

@@ -21,12 +21,14 @@ include("rotated.jl")
 ################################################################################
 
 #= path = "" =#
-#= iSaves = 0:5 =#
+#= iSaves = 0:1:5 =#
 #= dfiles = string.(path, "checkpoint", iSaves, ".h5") =#
 #= profilePlot(dfiles) =#
 
 #= MR91plot(dfiles) =#
 
-#= folder = "/home/hpeter/ResearchCallies/rapid_adjustment/sims/sim014/" # small S =#
-folder = "/home/hpeter/ResearchCallies/rapid_adjustment/sims/sim015/" # larger S
+#= folder = "/home/hpeter/Documents/ResearchCallies/sims/sim014/" # small S =#
+#= folder = "/home/hpeter/Documents/ResearchCallies/sims/sim015/" # larger S =#
+#= folder = "/home/hpeter/Documents/ResearchCallies/sims/sim017/" # small S double H =#
+folder = "/home/hpeter/Documents/ResearchCallies/sims/sim018/" # larger S double H
 canonicalVsNoTransport(folder)

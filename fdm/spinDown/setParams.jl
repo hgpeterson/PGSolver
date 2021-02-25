@@ -4,51 +4,27 @@
 canonical = true
 #= canonical = false =#
 
-# RC20
-H0 = 2e3
-Pr = 1e0
-f = -5.5e-5
-N = 1e-3
-θ = 2.5e-3
-κ0 = 1e-4
-κ1 = 1e-4
-h = 100
-v0 = 0.01
-
-#= # RC20 - larger slope and v0 =#
-#= H0 = 2e3 =#
+#= # RC20 =#
+#= H0 = 4e3 =#
 #= Pr = 1e0 =#
 #= f = -5.5e-5 =#
 #= N = 1e-3 =#
-#= θ = 1e-2 =#
+#= θ = 2.5e-3 =#
 #= κ0 = 1e-4 =#
 #= κ1 = 1e-4 =#
 #= h = 100 =#
-#= v0 = 0.1 =#
+#= v0 = 0.01 =#
 
-#= # MR93 =#
-#= H0 = 2e3 =#
-#= Pr = 1e0 =#
-#= f = 1e-4 =#
-#= N = 3.5e-3 =#
-#= θ = asin(1e-2) =#
-#= κ0 = 1e-4 =#
-#= κ1 = 1e-4 =#
-#= h = 10 =#
-#= v0 = -0.1 =#        
-
-#= # MR91 =#
-#= H0 = 1e0 =#
-#= Pr = 1e3 =#
-#= f = 1 =#
-#= N = 2 =#
-#= θ = 10*pi/180 =#
-#= κ0 = 1e-9 =#
-#= κ1 = 1e-9 =#
-#= h = 10 =#
-#= v0 = -0.01 =#        
-#= Δt = 0.5 =#
-#= tSave = 1 =#
+# RC20 - larger slope and v0
+H0 = 4e3
+Pr = 1e0
+f = -5.5e-5
+N = 1e-3
+θ = 1e-2
+κ0 = 1e-4
+κ1 = 1e-4
+h = 100
+v0 = 0.1
 
 # slope burger
 S = N^2*tan(θ)^2/f^2
@@ -59,7 +35,7 @@ S = N^2*tan(θ)^2/f^2
 tSave = τ
 
 # number of grid points
-nẑ = 2^9
+nẑ = 2^11
 
 # grid
 ẑ = @. H0*(1 - cos(pi*(0:nẑ-1)/(nẑ-1)))/2 # chebyshev (ẑ = 0 is bottom)
@@ -67,14 +43,14 @@ ẑ = @. H0*(1 - cos(pi*(0:nẑ-1)/(nẑ-1)))/2 # chebyshev (ẑ = 0 is bottom)
 #= bottomIntense = true =#
 bottomIntense = false
 if bottomIntense
-    κ = @. κ0 + κ1*exp(-(ẑ + H0)/h)
+    κ = @. κ0 + κ1*exp(-ẑ/h)
 else
     κ = κ1*ones(nẑ)
 end
 
 # timestepping
 adaptiveTimestep = false
-α = 0.0
+α = 0.5
 
 # Ekman layer
 δ = sqrt(2*Pr*κ1/abs(f))
