@@ -20,20 +20,20 @@ function getInversionLHS(κ, H)
 
     # Main loop, insert stencil in matrix for each node point
     # Lower boundary conditions 
-    # b.c. 1: dσ(chi) = 0
+    # b.c. 1: dσ(χ) = 0
     push!(A, (1, 1, fd_bot[1]))
     push!(A, (1, 2, fd_bot[2]))
     push!(A, (1, 3, fd_bot[3]))
-    # b.c. 2: chi = 0 
+    # b.c. 2: χ = 0 
     push!(A, (2, 1, 1.0))
 
     # Upper boundary conditions
-    # b.c. 1: dσσ(chi) = 0 
+    # b.c. 1: dσσ(χ) = 0 
     push!(A, (nσ, nσ-3, fd_top_σσ[1]))
     push!(A, (nσ, nσ-2, fd_top_σσ[2]))
     push!(A, (nσ, nσ-1, fd_top_σσ[3]))
     push!(A, (nσ, nσ,   fd_top_σσ[4]))
-    # b.c. 2: chi - U = 0
+    # b.c. 2: χ - U = 0
     push!(A, (nσ-1, nσ,  1.0))
     push!(A, (nσ-1, iU, -1.0))
 
@@ -55,7 +55,7 @@ function getInversionLHS(κ, H)
         # dσσσσ stencil
         fd_σσσσ = mkfdstencil(σ[j-2:j+2], σ[j], 4)
         
-        # eqtn: dσσ(nu*dσσ(chi))/H^4 + f^2*(chi - U)/nu = dξ(b) - dx(H)*σ*dσ(b)/H
+        # eqtn: dσσ(nu*dσσ(χ))/H^4 + f^2*(χ - U)/nu = dξ(b) - dx(H)*σ*dσ(b)/H
         # term 1 (product rule)
         push!(A, (row, j-1, Pr*κ_σσ*fd_σσ[1]/H^4))
         push!(A, (row, j,   Pr*κ_σσ*fd_σσ[2]/H^4))
@@ -77,137 +77,169 @@ function getInversionLHS(κ, H)
         push!(A, (row, iU, -f^2/(Pr*κ[j])))
     end
 
-    # if dξ(b) ~ 0 then 
-    #   (1) U = 0
-    #       for fixed 1D solution
-    #   (2) dσ(nu*dσσ(chi))/H^3 = Hx*b at σ = -1
-    #       for canonical 1D solution
+    # U equation: U = ?
     row = iU
-    if symmetry
-        push!(A, (row, row, 1.0))
-    else
-        # dσ stencil
-        fd_σ = mkfdstencil(σ[1:3], σ[1], 1)
-        κ_σ = sum(fd_σ.*κ[1:3])
-
-        # dσσ stencil
-        fd_σσ = mkfdstencil(σ[1:4], σ[1], 2)
-
-        # dσσσ stencil
-        fd_σσσ = mkfdstencil(σ[1:5], σ[1], 3)
-
-        # product rule
-        push!(A, (row, 1, Pr*κ_σ*fd_σσ[1]/H^3))
-        push!(A, (row, 2, Pr*κ_σ*fd_σσ[2]/H^3))
-        push!(A, (row, 3, Pr*κ_σ*fd_σσ[3]/H^3))
-        push!(A, (row, 4, Pr*κ_σ*fd_σσ[4]/H^3))
-
-        push!(A, (row, 1, Pr*κ[1]*fd_σσσ[1]/H^3))
-        push!(A, (row, 2, Pr*κ[1]*fd_σσσ[2]/H^3))
-        push!(A, (row, 3, Pr*κ[1]*fd_σσσ[3]/H^3))
-        push!(A, (row, 4, Pr*κ[1]*fd_σσσ[4]/H^3))
-        push!(A, (row, 5, Pr*κ[1]*fd_σσσ[5]/H^3))
-    end
+    push!(A, (row, row, 1.0))
 
     # Create CSC sparse matrix from matrix elements
     A = sparse((x->x[1]).(A), (x->x[2]).(A), (x->x[3]).(A), nσ+1, nσ+1)
-
-    #= println(rank(A)) =#
-    #= println(nσ+1) =#
 
     return A
 end
 
 """
-    RHS = getInversionRHS(b)
+    RHS = getInversionRHS(rhs, U)
 
 Setup right hand side of linear system for problem.
 """
-function getInversionRHS(b)
+function getInversionRHS(rhs, U)
     # last row is for U
-    rhs = zeros(nξ, nσ+1)
+    inversionRHS = zeros(nξ, nσ+1)
     iU = nσ + 1
 
-    # eqtn: dσσ(nu*dσσ(chi))/H^4 + f^2*(chi - U)/nu = dξ(b) - dx(H)*σ*dσ(b)/H
-    if ξVariation
-        rhs[:, 1:nσ] = xDerivativeTF(b)
-    else
-        rhs[:, 1:nσ] = -Hx.(ξξ).*σσ.*σDerivativeTF(b)./H.(ξξ)
-    end
-    rhs[:, [1, 2, nσ-1, nσ]] .= 0 # boundary conditions require zeros on the rhs
+    # fill rhs for interior nodes
+    inversionRHS[:, 1:nσ] = rhs
 
-    # if dξ(b) ~ 0 then 
-    #   (1) U = 0
-    #       for fixed 1D solution
-    #   (2) dσ(nu*dσσ(chi))/H^3 = Hx*b at σ = -1
-    #       for canonical 1D solution
-    if symmetry
-        #= rhs[:, iU] .= 1.0 =#
-    else
-        rhs[:, iU] = Hx.(ξ).*b[:, 1]
-    end
+    # zeros for boundary conditions
+    inversionRHS[:, [1, 2, nσ-1, nσ]] .= 0 
 
-    return rhs
+    # U = ?
+    inversionRHS[:, iU] .= U
+
+    return inversionRHS
 end
 
 """
-    chi, uξ, uη, uσ, U = postProcess(sol)
+    χ, uξ, uη, uσ, U = postProcess(sol)
 
-Take solution `sol` and extract reshaped `chi` and `U`. Compute `uξ`, `uη`, `uσ` 
-from definition of chi.
+Take solution `sol` and extract reshaped `χ` and `U`. Compute `uξ`, `uη`, `uσ` 
+from definition of χ.
 """
 function postProcess(sol)
     iU = nσ + 1
 
-    # chi at σ = 0 is vertical integral of uξ
-    U = sol[:, iU] 
+    # χ at σ = 0 is vertical integral of uξ
+    U = sol[1, iU] # just take first one since they all must be the same
 
-    # rest of solution is chi
-    chi = sol[:, 1:nσ]
+    # rest of solution is χ
+    χ = sol[:, 1:nσ]
 
-    # compute uξ = dσ(chi)/H
-    uξ = σDerivativeTF(chi)./H.(x)
+    # compute uξ = dσ(χ)/H
+    uξ = σDerivativeTF(χ)./H.(x)
 
-    # compute uη = int_-1^0 f*chi/nu dσ*H
+    # compute uη = int_-1^0 f*χ/nu dσ*H
     uη = zeros(nξ, nσ)
     for i=1:nξ
-        uη[i, :] = cumtrapz(f*(chi[i, :] .- U[i])./(Pr*κ[i, :]), σ)*H(ξ[i])
+        uη[i, :] = cumtrapz(f*(χ[i, :] .- U)./(Pr*κ[i, :]), σ)*H(ξ[i])
     end
 
-    # compute uσ = -dξ(chi)/H
+    # compute uσ = -dξ(χ)/H
     if ξVariation
-        uσ = -ξDerivativeTF(chi)./H.(x)
+        uσ = -ξDerivativeTF(χ)./H.(x)
     else
         uσ = zeros(nξ, nσ)
     end
 
-    return chi, uξ, uη, uσ, U
+    return χ, uξ, uη, uσ, U
 end
 
 """
-    chi, uξ, uη, uσ, U = invert(b)
+    sol = computeSol(inversionRHS)
+
+Compute inversion solution given right hand side `inversionRHS`.
+"""
+function computeSol(inversionRHS)
+    # solve
+    sol = zeros(nξ, nσ+1)
+    for i=1:nξ
+        sol[i, :] = inversionLHSs[i]\inversionRHS[i, :]
+    end
+    return sol
+end
+
+"""
+    U = computeU(solʰ, solᵖ)
+
+Compute U such that it satisfies constraint equation derived from
+island rule.
+"""
+function computeU(solʰ, solᵖ)
+    return 1e-2
+
+    #= # unpack =#
+    #= χʰ = solʰ[:, 1:nσ] =#
+    #= χᵖ = solᵖ[:, 1:nσ] =#
+
+    #= # first term: ⟨(ν*χʰ_zz)_z⟩ at z = 0 =#
+    #= term1 = zDerivativeTF(Pr*κ.*zDerivativeTF(zDerivativeTF(χʰ))) =#
+    #= term1 = term1[:, nσ] =#
+    #= term1 = sum(term1)/nξ =#
+
+    #= # second term: ⟨∫f^2/ν*χʰ⟩ =#    
+    #= term2 = zeros(nξ) =#
+    #= for i=1:nξ =#
+    #=     term2[i] = trapz(f^2 ./(Pr*κ[i, :]).*χʰ[i, :], σ)*H(ξ[i]) =#
+    #= end =#
+    #= term2 = sum(term2)/nξ =#
+
+    #= # third term: ⟨∫f^2/ν*(χᵖ-1)⟩ =#    
+    #= term3 = zeros(nξ) =#
+    #= for i=1:nξ =#
+    #=     term3[i] = trapz(f^2 ./(Pr*κ[i, :]).*(χᵖ[i, :] .- 1), σ)*H(ξ[i]) =#
+    #= end =#
+    #= term3 = sum(term3)/nξ =#
+    
+    #= # fourth term: ⟨(ν*χᵖ_zz)_z⟩ at z = 0 =#
+    #= term4 = zDerivativeTF(Pr*κ.*zDerivativeTF(zDerivativeTF(χᵖ))) =#
+    #= term4 = term4[:, nσ] =#
+    #= term4 = sum(term4)/nξ =#
+
+    #= return -(term1 + term2)/(term3 + term4) =#
+end
+
+"""
+    χ, uξ, uη, uσ, U = invert(b)
 
 Wrapper function that inverts for flow given buoyancy perturbation `b`.
 """
 function invert(b)
-    # compute RHS
-    inversionRHS = getInversionRHS(b)
-
-    # solve
-    sol = zeros(nξ, nσ+1)
-    #= @distributed for i=1:nξ =#
-    for i=1:nξ
-        sol[i, :] = inversionLHSs[i]\inversionRHS[i, :]
+    # homogeneous solution: rhs = dx(b), U = 0
+    # dx(b) = dξ(b) - dx(H)*σ*dσ(b)/H
+    if ξVariation
+        rhs = xDerivativeTF(b)
+    else
+        rhs = -Hx.(ξξ).*σσ.*σDerivativeTF(b)./H.(ξξ)
     end
+    inversionRHS = getInversionRHS(rhs, 0)
+    solʰ = computeSol(inversionRHS)
 
-    # compute flow from sol
-    chi, uξ, uη, uσ, U = postProcess(sol)
+    # particular solution: rhs = f^2/ν, U = 1
+    rhs = @. f^2/(Pr*κ)
+    inversionRHS = getInversionRHS(rhs, 1)
+    solᵖ = computeSol(inversionRHS)
+    
+    χ, uξ, uη, uσ, U = postProcess(solᵖ)
+    ridgePlot(χ, b, @sprintf("particular solution"), L"$\chi$ (m$^2$ s$^{-1}$)")
+    savefig("part.png")
+    close()
+    plot(χ[1, :], z[1, :])
+    tight_layout()
+    savefig("part1D.png")
+    close()
+    error("done")
 
-    return chi, uξ, uη, uσ, U
+    # compute U such that "island rule" is satisfied
+    U = computeU(solʰ, solᵖ)
+    println(U)
+
+    # linearity: solution = solʰ + U*solᵖ
+    χ, uξ, uη, uσ, U = postProcess(solʰ + U*solᵖ)
+
+    return χ, uξ, uη, uσ, U
 end
 
 """
-    chiEkman = getChiEkman(b)
+    χEkman = getChiEkman(b)
 
 Compute Ekman layer solution to problem given buoyancy perturbation b.
 """
@@ -219,18 +251,18 @@ function getChiEkman(b)
     δ = sqrt(2*Pr*κ1/abs(f)) # using κ at the bottom
 
     # interior solution: thermal wind balance
-    chi_I = bx
-    chi_I_bot = repeat(chi_I[:, 1], 1, nσ)
-    chi_I_top = repeat(chi_I[:, nσ], 1, nσ)
+    χ_I = bx
+    χ_I_bot = repeat(χ_I[:, 1], 1, nσ)
+    χ_I_top = repeat(χ_I[:, nσ], 1, nσ)
 
     # bottom Ekman layer correction
-    chi_B_bot = @. -exp(-(z + H(x))/δ)*chi_I_bot*(cos((z + H(x))/δ) + sin((z + H(x))/δ))
+    χ_B_bot = @. -exp(-(z + H(x))/δ)*χ_I_bot*(cos((z + H(x))/δ) + sin((z + H(x))/δ))
 
     # top Ekman layer correction
-    chi_B_top = @. -exp(z/δ)*chi_I_top*cos(z/δ)
+    χ_B_top = @. -exp(z/δ)*χ_I_top*cos(z/δ)
 
     # full solution (use full κ with assumption that its variation is larger than δ)
-    chiEkman = @. Pr*κ/f^2*(chi_I + chi_B_bot + chi_B_top)
+    χEkman = @. Pr*κ/f^2*(χ_I + χ_B_bot + χ_B_top)
 
-    return chiEkman
+    return χEkman
 end

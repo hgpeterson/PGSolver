@@ -126,7 +126,7 @@ function profilePlot(datafiles, iξ)
     # plot data from `datafiles`
     for i=1:size(datafiles, 1)
         # load
-        b, chi, uξ, uη, uσ, U, t, L, H0, Pr, f, N, symmetry, ξVariation, κ = loadCheckpointTF(datafiles[i])
+        b, chi, uξ, uη, uσ, U, t, L, H0, Pr, f, N, ξVariation, κ = loadCheckpointTF(datafiles[i])
         u, v, w = transformFromTF(uξ, uη, uσ)
 
         # gradient
@@ -168,7 +168,7 @@ function advectionPlot(datafiles, iξ)
 
     for i=1:size(datafiles, 1)
         # load
-        b, chi, uξ, uη, uσ, U, t, L, H0, Pr, f, N, symmetry, ξVariation, κ = loadCheckpointTF(datafiles[i])
+        b, chi, uξ, uη, uσ, U, t, L, H0, Pr, f, N, ξVariation, κ = loadCheckpointTF(datafiles[i])
     
         adv1 = -uξ.*ξDerivativeTF(b)
         adv2 = -uσ.*σDerivativeTF(b)

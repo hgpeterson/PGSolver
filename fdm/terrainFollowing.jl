@@ -119,7 +119,6 @@ function saveCheckpointTF(b, chi, uξ, uη, uσ, U, t)
     write(file, "Pr", Pr)
     write(file, "f", f)
     write(file, "N", N)
-    write(file, "symmetry", symmetry)
     write(file, "ξVariation", ξVariation)
     write(file, "κ", κ)
     close(file)
@@ -127,7 +126,7 @@ function saveCheckpointTF(b, chi, uξ, uη, uσ, U, t)
 end
 
 """
-    b, chi, uξ, uη, uσ, U, t, L, H0, Pr, f, N, symmetry, ξVariation, κ = loadCheckpointTF(filename)
+    b, chi, uξ, uη, uσ, U, t, L, H0, Pr, f, N, ξVariation, κ = loadCheckpointTF(filename)
 
 Load .h5 checkpoint file given by `filename`.
 """
@@ -145,9 +144,8 @@ function loadCheckpointTF(filename)
     Pr = read(file, "Pr")
     f = read(file, "f")
     N = read(file, "N")
-    symmetry = read(file, "symmetry")
     ξVariation, = read(file, "ξVariation")
     κ = read(file, "κ")
     close(file)
-    return b, chi, uξ, uη, uσ, U, t, L, H0, Pr, f, N, symmetry, ξVariation, κ
+    return b, chi, uξ, uη, uσ, U, t, L, H0, Pr, f, N, ξVariation, κ
 end

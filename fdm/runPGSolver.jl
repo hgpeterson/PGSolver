@@ -17,7 +17,6 @@ include("evolution.jl")
 
 print("Computing inversion matrices: ")
 inversionLHSs = Array{Any}(undef, nξ)
-#= @distributed for i=1:nξ =#
 for i=1:nξ
     inversionLHSs[i] = lu(getInversionLHS(κ[i, :], H(ξ[i])))
 end 

@@ -6,22 +6,19 @@ N = 1e-3
 # turn on/off variations in ξ
 ξVariation = true
 
-# set U = 0 or compute U at each time step?
-symmetry = true
-
 # topography
-#= L = 2e6 =#
-#= H0 = 2e3 =#
-#= amp =  0.4*H0 =#
+L = 2e6
+H0 = 2e3
+amp =  0.4*H0
+#= amp =  H0 =#
 #= H(x) = H0 - amp*sin(2*pi*x/L) =#
 #= Hx(x) = -2*pi/L*amp*cos(2*pi*x/L) =#
-
-L = 1e5
-H0 = 1e3
-amp =  0.4*H0
-wid = 4.5*H0
-H(x) = H0 + amp*exp(-(x - L/2)^2/(2*wid^2))
-Hx(x) = -amp*(x - L/2)/wid^2*exp(-(x - L/2)^2/(2*wid^2))
+ϕ(s) = exp(-s^2/2)
+Φ(s) = 1/2*(1 + erf(s/√2))
+α = 5
+μ = L/2
+ω = L/8
+H(x) = H0 - amp*ϕ((x - μ)/ω)*Φ(α*(x - μ)/ω)
 
 # number of grid points
 nξ = 2^8 + 1 
@@ -31,22 +28,26 @@ nσ = 2^8
 dξ = dx = L/nξ
 ξ = 0:dξ:(L - dξ)
 σ = @. -(cos(pi*(0:nσ-1)/(nσ-1)) + 1)/2 # chebyshev 
-#= dσ = 1/(nσ - 1) =#
-#= σ = -1:dσ:0 =#
 ξξ = repeat(ξ, 1, nσ)
 σσ = repeat(σ', nξ, 1)
 dσ = zeros(nξ, nσ)
 dσ[:, 1:end-1] = σσ[:, 2:end] - σσ[:, 1:end-1]
 dσ[:, end] = dσ[:, end-1]
 
+#= plot(ξ, -H.(ξ)) =#
+#= ylim([-H0, 0]) =#
+#= tight_layout() =#
+#= savefig("hill.png") =#
+#= error("done") =#
+
 # domain in physical (x, z) space (2D arrays)
 x = repeat(ξ, 1, nσ)
 z = repeat(σ', nξ, 1).*repeat(H.(ξ), 1, nσ)
 
 # arrays of sin(θ) and cos(θ) for 1D solutions
-sinθ = @. -Hx(ξξ)/sqrt(1 + Hx(ξξ)^2)
-cosθ = @. 1/sqrt(1 + Hx(ξξ)^2) 
-θ = asin.(sinθ[:, 1])
+#= sinθ = @. -Hx(ξξ)/sqrt(1 + Hx(ξξ)^2) =#
+#= cosθ = @. 1/sqrt(1 + Hx(ξξ)^2) =# 
+#= θ = asin.(sinθ[:, 1]) =#
 
 # diffusivity
 κ0 = 6e-5
@@ -55,15 +56,14 @@ h = 200
 bottomIntense = true
 if bottomIntense
     κ = @. κ0 + κ1*exp(-(z + H(x))/h)
-    #= κ = @. κ0 + κ1*exp(-(z + H(x) - h)/h) =#
 else
     κ = κ1*ones(nξ, nσ)
 end
 
 # timestepping
 Δt = 10*86400
-#= adaptiveTimestep = false =#
-adaptiveTimestep = true
+adaptiveTimestep = false
+#= adaptiveTimestep = true =#
 
 """
     log(ofile, text)
@@ -92,7 +92,6 @@ log(ofile, @sprintf("h  = %d m", h))
 log(ofile, @sprintf("Δt = %.2f days", Δt/86400))
 
 log(ofile, string("\nVariations in ξ:        ", ξVariation))
-log(ofile, string("Symmetric:              ", symmetry))
 log(ofile, string("Bottom intensification: ", bottomIntense))
 log(ofile, string("Adaptive timestep:      ", adaptiveTimestep))
 
