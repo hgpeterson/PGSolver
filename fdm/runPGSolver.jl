@@ -1,4 +1,4 @@
-using PyPlot, PyCall, Printf, SparseArrays, LinearAlgebra, HDF5, Dierckx
+using PyPlot, PyCall, Printf, SparseArrays, LinearAlgebra, HDF5, Dierckx, SpecialFunctions
 
 plt.style.use("~/paper_plots.mplstyle")
 close("all")
@@ -20,6 +20,9 @@ inversionLHSs = Array{Any}(undef, nξ)
 for i=1:nξ
     inversionLHSs[i] = lu(getInversionLHS(κ[i, :], H(ξ[i])))
 end 
+# particular solution 
+inversionRHS = getInversionRHS(zeros(nξ, nσ), 1)
+solᵖ = computeSol(inversionRHS)
 println("Done.")
 
 b = evolve(5000)
@@ -31,6 +34,7 @@ b = evolve(5000)
 path = ""
 dfiles = string.(path, ["checkpoint1000.h5", "checkpoint2000.h5", "checkpoint3000.h5", "checkpoint4000.h5", "checkpoint5000.h5"])
 profilePlot(dfiles, 1)
+#= profilePlot(dfiles, Int64(round(nξ/2))) =#
 
 #= include("talkPlots.jl") =#
 #= folder = "/home/hpeter/Documents/ResearchCallies/rapid_adjustment/sims/sim008/" # bi κ =#

@@ -10,7 +10,6 @@ N = 1e-3
 L = 2e6
 H0 = 2e3
 amp =  0.4*H0
-#= amp =  H0 =#
 #= H(x) = H0 - amp*sin(2*pi*x/L) =#
 #= Hx(x) = -2*pi/L*amp*cos(2*pi*x/L) =#
 ϕ(s) = exp(-s^2/2)
@@ -19,6 +18,7 @@ amp =  0.4*H0
 μ = L/2
 ω = L/8
 H(x) = H0 - amp*ϕ((x - μ)/ω)*Φ(α*(x - μ)/ω)
+Hx(x) = -amp/ω*(α/sqrt(2π)*ϕ(α*√2*(x - μ)/ω)*ϕ((x - μ)/ω) - (x - μ)/ω*ϕ((x - μ)/ω)*Φ(α*(x - μ)/ω))
 
 # number of grid points
 nξ = 2^8 + 1 
@@ -33,12 +33,6 @@ dξ = dx = L/nξ
 dσ = zeros(nξ, nσ)
 dσ[:, 1:end-1] = σσ[:, 2:end] - σσ[:, 1:end-1]
 dσ[:, end] = dσ[:, end-1]
-
-#= plot(ξ, -H.(ξ)) =#
-#= ylim([-H0, 0]) =#
-#= tight_layout() =#
-#= savefig("hill.png") =#
-#= error("done") =#
 
 # domain in physical (x, z) space (2D arrays)
 x = repeat(ξ, 1, nσ)

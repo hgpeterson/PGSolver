@@ -127,6 +127,7 @@ function evolve(tFinalDays)
     # initial condition
     t = 0
     b = zeros(nξ, nσ)
+    #= b, chi, uξ, uη, uσ, U, t, L, H0, Pr, f, N, ξVariation, κ = loadCheckpointTF("checkpoint5000.h5") =#
     chi, uξ, uη, uσ, U = invert(b)
     saveCheckpointTF(b, chi, uξ, uη, uσ, U, t)
     chiEkman = getChiEkman(b)

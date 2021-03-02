@@ -35,6 +35,16 @@ function cumtrapz(f, x)
 end
 
 """
+    fz = differentiate_pointwise(f, z, z0, n)
+
+Compute `n`th order derivative of `f` at `z0` given grid `z`.
+"""
+function differentiate_pointwise(f, z, z0, n)
+    fd_z = mkfdstencil(z, z0, n)
+    return sum(fd_z.*f)
+end
+
+"""
     fz = differentiate(f, z)
 
 Compute second order first derivative of `f` on grid `z`.
@@ -46,15 +56,12 @@ function differentiate(f, z)
 
     # 2nd order centered difference
     for j=2:nz-1
-        fd_z = mkfdstencil(z[j-1:j+1], z[j], 1)
-        fz[j] = sum(fd_z.*f[j-1:j+1])
+        fz[j] = differentiate_pointwise(f[j-1:j+1], z[j-1:j+1], z[j], 1)
     end
 
     # 2nd order off-center difference on top and bottom boundary
-    fd_bot = mkfdstencil(z[1:3], z[1], 1)
-    fd_top = mkfdstencil(z[nz-2:nz], z[nz], 1)
-    fz[1]  = sum(fd_bot.*f[1:3])
-    fz[nz] = sum(fd_top.*f[nz-2:nz])
+    fz[1] = differentiate_pointwise(f[1:3], z[1:3], z[1], 1)
+    fz[nz] = differentiate_pointwise(f[nz-2:nz], z[nz-2:nz], z[nz], 1)
 
     return fz
 end

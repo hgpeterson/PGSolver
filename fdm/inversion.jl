@@ -164,37 +164,49 @@ Compute U such that it satisfies constraint equation derived from
 island rule.
 """
 function computeU(solʰ, solᵖ)
-    return 1e-2
+    # unpack
+    χʰ = solʰ[:, 1:nσ]
+    χᵖ = solᵖ[:, 1:nσ]
 
-    #= # unpack =#
-    #= χʰ = solʰ[:, 1:nσ] =#
-    #= χᵖ = solᵖ[:, 1:nσ] =#
-
-    #= # first term: ⟨(ν*χʰ_zz)_z⟩ at z = 0 =#
-    #= term1 = zDerivativeTF(Pr*κ.*zDerivativeTF(zDerivativeTF(χʰ))) =#
+    # first term: ⟨(ν*χʰ_zz)_z⟩ at z = 0
+    #= term1 = zDerivativeTF(Pr*κ .*zDerivativeTF(zDerivativeTF(χʰ))) =#
     #= term1 = term1[:, nσ] =#
-    #= term1 = sum(term1)/nξ =#
+    term1 = zeros(nξ)
+    for i=1:nξ
+        # χ_zzz on the boundary
+        term1[i] = Pr*κ[i, nσ]*differentiate_pointwise(χʰ[i, nσ-4:nσ], σ[nσ-4:nσ], σ[nσ], 3)/H(ξ[i])^3
+        # κ_z*χ_zz on the boundary
+        term1[i] += Pr*differentiate_pointwise(κ[i, nσ-2:nσ], σ[nσ-2:nσ], σ[nσ], 1)*differentiate_pointwise(χʰ[i, nσ-3:nσ], σ[nσ-3:nσ], σ[nσ], 2)/H(ξ[i])^3
+    end
+    term1 = sum(term1)/nξ
 
-    #= # second term: ⟨∫f^2/ν*χʰ⟩ =#    
-    #= term2 = zeros(nξ) =#
-    #= for i=1:nξ =#
-    #=     term2[i] = trapz(f^2 ./(Pr*κ[i, :]).*χʰ[i, :], σ)*H(ξ[i]) =#
-    #= end =#
-    #= term2 = sum(term2)/nξ =#
+    # second term: ⟨∫f^2/ν*χʰ⟩    
+    term2 = zeros(nξ)
+    for i=1:nξ
+        term2[i] = trapz(f^2 ./(Pr*κ[i, :]).*χʰ[i, :], σ)*H(ξ[i])
+    end
+    term2 = sum(term2)/nξ
 
-    #= # third term: ⟨∫f^2/ν*(χᵖ-1)⟩ =#    
-    #= term3 = zeros(nξ) =#
-    #= for i=1:nξ =#
-    #=     term3[i] = trapz(f^2 ./(Pr*κ[i, :]).*(χᵖ[i, :] .- 1), σ)*H(ξ[i]) =#
-    #= end =#
-    #= term3 = sum(term3)/nξ =#
+    # third term: ⟨∫f^2/ν*(χᵖ-1)⟩    
+    term3 = zeros(nξ)
+    for i=1:nξ
+        term3[i] = trapz(f^2 ./(Pr*κ[i, :]).*(χᵖ[i, :] .- 1), σ)*H(ξ[i])
+    end
+    term3 = sum(term3)/nξ
     
-    #= # fourth term: ⟨(ν*χᵖ_zz)_z⟩ at z = 0 =#
-    #= term4 = zDerivativeTF(Pr*κ.*zDerivativeTF(zDerivativeTF(χᵖ))) =#
+    # fourth term: ⟨(ν*χᵖ_zz)_z⟩ at z = 0
+    #= term4 = zDerivativeTF(Pr*κ .*zDerivativeTF(zDerivativeTF(χᵖ))) =#
     #= term4 = term4[:, nσ] =#
-    #= term4 = sum(term4)/nξ =#
+    term4 = zeros(nξ)
+    for i=1:nξ
+        # χ_zzz on the boundary
+        term4[i] = Pr*κ[i, nσ]*differentiate_pointwise(χᵖ[i, nσ-4:nσ], σ[nσ-4:nσ], σ[nσ], 3)/H(ξ[i])^3
+        # κ_z*χ_zz on the boundary
+        term4[i] += Pr*differentiate_pointwise(κ[i, nσ-2:nσ], σ[nσ-2:nσ], σ[nσ], 1)*differentiate_pointwise(χᵖ[i, nσ-3:nσ], σ[nσ-3:nσ], σ[nσ], 2)/H(ξ[i])^3
+    end
+    term4 = sum(term4)/nξ
 
-    #= return -(term1 + term2)/(term3 + term4) =#
+    return -(term1 + term2)/(term3 + term4)
 end
 
 """
@@ -213,27 +225,29 @@ function invert(b)
     inversionRHS = getInversionRHS(rhs, 0)
     solʰ = computeSol(inversionRHS)
 
-    # particular solution: rhs = f^2/ν, U = 1
-    rhs = @. f^2/(Pr*κ)
-    inversionRHS = getInversionRHS(rhs, 1)
-    solᵖ = computeSol(inversionRHS)
-    
-    χ, uξ, uη, uσ, U = postProcess(solᵖ)
-    ridgePlot(χ, b, @sprintf("particular solution"), L"$\chi$ (m$^2$ s$^{-1}$)")
-    savefig("part.png")
-    close()
-    plot(χ[1, :], z[1, :])
-    tight_layout()
-    savefig("part1D.png")
-    close()
-    error("done")
+    # particular solution is global variable computed in runPGSolver.jl
 
     # compute U such that "island rule" is satisfied
     U = computeU(solʰ, solᵖ)
-    println(U)
+    println("U = ", U, " m2 s-1")
 
     # linearity: solution = solʰ + U*solᵖ
     χ, uξ, uη, uσ, U = postProcess(solʰ + U*solᵖ)
+    
+    #= χʰ, uξʰ, uηʰ, uσʰ, Uʰ = postProcess(solʰ) =#
+    #= χᵖ, uξᵖ, uηᵖ, uσᵖ, Uᵖ = postProcess(solᵖ) =#
+    #= iξ = 1 =#
+    #= #1= iξ = Int64(round(nξ/2)) =1# =#
+    #= plot(χ[iξ, :], z[iξ, :], label=L"$\chi$") =#
+    #= plot(χʰ[iξ, :], z[iξ, :], label=L"$\chi^h$") =#
+    #= plot(U*χᵖ[iξ, :], z[iξ, :], label=L"$U\chi^p$") =#
+    #= legend() =#
+    #= xlabel(L"$\chi$") =#
+    #= ylabel(L"$z$") =#
+    #= tight_layout() =#
+    #= savefig("part_homo.png") =#
+    #= close() =#
+    #= error("done") =#
 
     return χ, uξ, uη, uσ, U
 end
