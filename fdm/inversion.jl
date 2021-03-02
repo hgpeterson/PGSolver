@@ -233,21 +233,6 @@ function invert(b)
 
     # linearity: solution = solʰ + U*solᵖ
     χ, uξ, uη, uσ, U = postProcess(solʰ + U*solᵖ)
-    
-    #= χʰ, uξʰ, uηʰ, uσʰ, Uʰ = postProcess(solʰ) =#
-    #= χᵖ, uξᵖ, uηᵖ, uσᵖ, Uᵖ = postProcess(solᵖ) =#
-    #= iξ = 1 =#
-    #= #1= iξ = Int64(round(nξ/2)) =1# =#
-    #= plot(χ[iξ, :], z[iξ, :], label=L"$\chi$") =#
-    #= plot(χʰ[iξ, :], z[iξ, :], label=L"$\chi^h$") =#
-    #= plot(U*χᵖ[iξ, :], z[iξ, :], label=L"$U\chi^p$") =#
-    #= legend() =#
-    #= xlabel(L"$\chi$") =#
-    #= ylabel(L"$z$") =#
-    #= tight_layout() =#
-    #= savefig("part_homo.png") =#
-    #= close() =#
-    #= error("done") =#
 
     return χ, uξ, uη, uσ, U
 end
